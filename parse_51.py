@@ -2,12 +2,15 @@ from enum import Enum
 import pandas as pd
 from pathlib import Path
 import re
-import math
 from datetime import datetime
 import locale
 import shutil
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
+
+import camelot
+from pdfminer.high_level import extract_pages
+from pdfminer.layout import LTTextBoxHorizontal, LTTextLineHorizontal
 
 STATE = Enum('State', ['stINIT', 'stPERIOD', 'stHEADER', 'stBALANCE'])
 
@@ -49,21 +52,8 @@ def getPeriod(periodstr):
             dates.append(periodstr)
     return dates
 
-#Получаем список значимых столбцов
-def getColumns(row):
-    columns = [0,1,2,3,4,5,7,8,10,11]
-    cols = []
-    idx = 0
-    for value in row:
-        if not (isinstance(value, float) and math.isnan(value)):
-            cols.append(idx)
-        idx = idx+1
-    print(cols)
-    return cols
-
 
 def getResult(data):
-    #row = data.iloc[[-1][0]]
     row = data.iloc[[-1][0]]
     row = pd.to_numeric(row, errors='coerce')
     row.dropna(inplace=True)
@@ -106,6 +96,7 @@ def getDefinition(data):
                         columns.append(head[head.str.contains('Текущ', na=False)].index)
                         if columns[0].empty or columns[1].empty or columns[2].empty :
                             raise Exception('Incorrect structure. Incomplete data')
+                        cols2del = head[head.str.contains('Пока', na=False)].index
                         state=state+1
                 #case STATE.stBALANCE.value:
                 #    if BALANCE_STR in row[0]:
@@ -116,11 +107,11 @@ def getDefinition(data):
         idx = idx+1
     if (state <= STATE.stHEADER.value) :
         raise Exception('Incorrect header structure')
-    return {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': columns} #, 'OpenD':openD, 'OpenBalance':openBalance, 'FirstRowIDX': firstrowidx, 'columns': columns}
+    return {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': columns, 'cols2del': cols2del} #, 'OpenD':openD, 'OpenBalance':openBalance, 'FirstRowIDX': firstrowidx, 'columns': columns}
 
 
 #Совершенно костыльная процедура
-def addMissedColumns(data, columns):
+def addMissedColumns(data, columns, cols2del):
     maxidx = data.columns[-1]
     df = data.reindex(columns=[*data.columns.tolist(), *list(range(maxidx+1, maxidx+11-len(data.columns)))],  fill_value = 0.0)
     try :
@@ -143,23 +134,15 @@ def addMissedColumns(data, columns):
             df.insert(9, columns[2][0], 0.0)
     except Exception :
         raise Exception('Incorrect data structure')
+    df = df.drop([col for col in cols2del], axis=1)
     return df.iloc[:, 0:10]
 
-def getDataFrameFromExcel(df, clientid, xlsname):
-    
-    #Из первых строк файла получаем имя компании, начало и конец периода, баланс на начало периода, 
-    #   магический столбец 'Д' и список значимых столбцов (для объединённых ячеек excel)
-    #try:
-    definition = getDefinition(df)
 
+#Returns (trancated df, openbalance, controlDebet, controlCredit, controlBalance)
+def getControlValues(df) :
     #Берём контрольные данные из строки "Обороты за период и сальдо на конец"
     firstrow = df.loc[df[0].str.contains(BALANCE_STR, na=False)]
     lastrow = df.loc[df[0].str.contains(CHECK_STR[0], na=False) | df[0].str.contains(CHECK_STR[1], na=False)]
-    #Пытаемся найти отбор по счёту
-    searchrow = df.loc[df[0] == SEARCH_STR]
-    searchstr = ""
-    if not searchrow.empty :
-        searchstr = searchrow[2]
 
     openbalance = 0.0
     try :
@@ -191,10 +174,7 @@ def getDataFrameFromExcel(df, clientid, xlsname):
         controlDebet = 0.0
         controlCredit = 0.0
         controlBalance = 0.0
-    #lastrow = df.loc[df[0] == CHECK_STR]
-    #firstrow = df.loc[df[0] == BALANCE_STR]
 
-    #df = pd.read_excel(xlsname, header=None, skiprows=firstrow.index[0]+1, nrows=lastrow.index[0]-firstrow.index[0]-1)#definition['FirstRowIDX'])#, usecols=readablecols)
     lowidx = 1
     highidx = df.shape[0] + 1
     if not firstrow.empty :
@@ -202,10 +182,29 @@ def getDataFrameFromExcel(df, clientid, xlsname):
     if not lastrow.empty :
         highidx = lastrow.index[0]
 
-    df = df.iloc[lowidx:highidx,:]
+    return (df.iloc[lowidx:highidx,:], openbalance, controlDebet, controlCredit, controlBalance)
+
+
+
+def getDataFrameFromExcel(df, clientid, xlsname):
+    
+    #Из первых строк файла получаем имя компании, начало и конец периода, баланс на начало периода, 
+    #   магический столбец 'Д' и список значимых столбцов (для объединённых ячеек excel)
+    #try:
+    definition = getDefinition(df)
+
+    #Пытаемся найти отбор по счёту
+    searchrow = df.loc[df[0] == SEARCH_STR]
+    searchstr = ""
+    if not searchrow.empty :
+        searchstr = searchrow[2]
+
+    df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
+
+
     if not df.empty :
         df = df.dropna(axis=1,how='all')
-        df = addMissedColumns(df, definition['columns'])
+        df = addMissedColumns(df, definition['columns'], definition['cols2del'])
         df.columns = ["Date", "Document"
                     , "Debet_Analitics", "Credit_Analitics"
                     , "Debet_Account", "Debet_Amount"
@@ -288,26 +287,62 @@ def getDataFrameFromExcel(df, clientid, xlsname):
     df.insert(df.shape[1], 'Result', status)
     return df
 
-DIRPATH = './Data/*.xls*'
+def getHeadLines(pdfname: str, nlines: int = 3) :
+    result = []
+    for page_layout in extract_pages(pdfname, maxpages=1) :
+        for element in page_layout :
+            if isinstance(element, LTTextBoxHorizontal) :
+                txt = element.get_text()
+                lines = txt.split("\n")
+                for line in lines :
+                    if len(line) > 0 :
+                        result.append(line)
+                        if len(result) >= nlines :
+                            return result
+    return result
+
+def processPDF(pdfname) :
+    berror = False
+    df = pd.DataFrame()
+    headers = getHeadLines(pdfname, 3)
+    if len(headers)>=2 and headers[1].startswith("Карточка счета 51") :
+        tables = camelot.read_pdf(pdfname, pages="all")
+
+        for tbl in tables :
+            df = pd.concat([df, tbl.df])
+
+        #Берём контрольные данные из строки "Обороты за период и сальдо на конец"
+        firstrow = df.loc[df[0].str.contains(BALANCE_STR, na=False)]
+        lastrow = df.loc[df[0].str.contains(CHECK_STR[0], na=False) | df[0].str.contains(CHECK_STR[1], na=False)]
+           
+
+        df.columns = ["Date", "Document"
+                , "Debet_Analitics", "Credit_Analitics"
+                , "Debet_Account", "Debet_Amount"
+                , "Credit_Account", "Credit_Amount"
+                , "Balance_D", "Balance"]
+    return (df, berror)
 
 
-#if (Path('parsed.csv').is_file()):
-#    Path.unlink('parsed.csv')
-#Записываем результат
-
-#for root, dirs, files in os.walk('./Data'):
-#    for name in filter(lambda file: file.endswith('.xls') or file.endswith('.xlsx'), files):
-#        parts = os.path.split(root)
-#        clientid = parts[1]
-#        filepath = root + os.sep + name
-#        print(filepath)
-
-#for xlsname in glob.glob(DIRPATH, recursive=True):
-    #print('START: ' + xlsname)
+def processExcel(xlsname) :
+    berror = False
+    df = pd.DataFrame()
+    sheets = pd.read_excel(xlsname, header=None, sheet_name=None)
+    if len(sheets) > 1 :
+        print(xlsname, ':WARNING:', len(sheets), " sheets found")
+    for sheet in sheets :
+        try :
+            df = pd.concat([df, getDataFrameFromExcel(sheets[sheet], clientid, xlsname + "_" + sheet)])
+        except Exception as err :
+            berror = True   
+            print(xlsname, '_', sheet, ':ERROR:', err)
+            logstr = "ERROR:" + clientid + ":" + os.path.basename(xlsname) + ":" + sheet + ":0:" + type(err).__name__ + " " + str(err) + "\n"
+            logf.write(logstr)
+    return (df, berror)
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument("-d", "--data", default="./Data", help="Data folder")
-parser.add_argument("-r", "--done", default="./Done", help="Done folder")
+parser.add_argument("-d", "--data", default="../Data", help="Data folder")
+parser.add_argument("-r", "--done", default="../Done", help="Done folder")
 parser.add_argument("-l", "--logfile", default="./acc51log.txt", help="Log file")
 parser.add_argument("-o", "--output", default="./parsed", help="Resulting file name (no extension)")
 parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
@@ -328,45 +363,40 @@ cnt = 0
 outname = outbasename + ".csv"
 
 for root, dirs, files in os.walk(DIRPATH) :
-    for name in filter(lambda file: file.lower().endswith('.xls') or file.lower().endswith('.xlsx'), files) :
+    for name in filter(lambda file: file.lower().endswith('.xls') or file.lower().endswith('.xlsx') or file.lower().endswith('.pdf'), files) :
         try :
             try :
                 parts = os.path.split(root)
                 clientid = parts[1]
-                xlsname = root + os.sep + name  
-                sheets = pd.read_excel(xlsname, header=None, sheet_name=None)
-                if bSplit and cnt % maxFiles == 0 :
-                    outname = outbasename + str(cnt) + ".csv"
-                berror = False
-                if len(sheets) > 1 :
-                    print(xlsname, ':WARNING:', len(sheets), " sheets found")
-                for sheet in sheets :
-                    try :
-                        df = sheets[sheet]
-                        df = getDataFrameFromExcel(df, clientid, xlsname + "_" + sheet)
-                        if not df.empty :
-                            cnt = cnt + 1
-                            if (Path(outname).is_file()):
-                                df.to_csv(outname, mode="a", header=False, index=False)
-                            else:
-                                df.to_csv(outname, mode="w", index=False)
+                inname = root + os.sep + name  
 
-                            try :
-                                logstr = "PROCESSED:" + clientid + ":" + os.path.basename(xlsname) + ":" + sheet + ":" + str(df.shape[0]) + ":" + outname + "\n"
-                                logf.write(logstr)
-                            except Exception as err:
-                                logstr = "PROCESSED:" + clientid + ":ND:ND:ND:ERROR " + err + "\n"
-                                logf.write(logstr)
-                    except Exception as err :
-                        berror = True   
-                        print(xlsname, '_', sheet, ':ERROR:', err)
-                        logstr = "ERROR:" + clientid + ":" + os.path.basename(xlsname) + ":" + sheet + ":0:" + type(err).__name__ + " " + str(err) + "\n"
+                if name.lower().endswith('.xls') or name.lower().endswith('.xlsx') :
+                    #sheets = pd.read_excel(inname, header=None, sheet_name=None)
+                    if bSplit and cnt % maxFiles == 0 :
+                        outname = outbasename + str(cnt) + ".csv"
+                    df, berror = processExcel(inname)
+                elif name.lower().endswith('.pdf') :
+                    df, berror = processPDF(inname)
+
+                if not df.empty :
+                    cnt = cnt + 1
+                    if (Path(outname).is_file()):
+                        df.to_csv(outname, mode="a", header=False, index=False)
+                    else:
+                        df.to_csv(outname, mode="w", index=False)
+
+                    try :
+                        logstr = "PROCESSED:" + clientid + ":" + os.path.basename(inname) + ":ALL:" + str(df.shape[0]) + ":" + outname + "\n"
                         logf.write(logstr)
+                    except Exception as err:
+                        logstr = "PROCESSED:" + clientid + ":ND:ND:ND:ERROR " + err + "\n"
+                        logf.write(logstr)
+
                 if not berror :
-                    shutil.move(xlsname, doneFolder + clientid + '_' + os.path.basename(xlsname))
+                    shutil.move(inname, doneFolder + clientid + '_' + os.path.basename(inname))
             except Exception as err :
-                print(xlsname, ':ERROR:', err)
-                logstr = "FILE_ERROR:" + clientid + ":" + os.path.basename(xlsname) + "::0:" + type(err).__name__ + " " + str(err) + "\n"
+                print(inname, ':ERROR:', err)
+                logstr = "FILE_ERROR:" + clientid + ":" + os.path.basename(inname) + "::0:" + type(err).__name__ + " " + str(err) + "\n"
                 logf.write(logstr)
         except Exception as err :
             print('!!!CRITICAL ERROR!!!', err)
