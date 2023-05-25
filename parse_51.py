@@ -25,14 +25,14 @@ DATE_REGEX = "\d{1,2}[.\-/]\d{1,2}[.\-/]\d{4}"
 def getPeriod(periodstr):
     dates = []
     locale.setlocale(locale.LC_ALL, 'ru_RU')
-    periods = re.findall(DATE_REGEX, periodstr)
+    periods = [x.strip() for x in re.findall(DATE_REGEX, periodstr)]
     if len(periods) > 0:
         for period in periods:
             #dtStr = period.replace('/', '.').replace('-','.')
             #dt = datetime.strptime(dtStr, "%d.%m.%Y")
             dates.append(period)
     else:
-        periods = re.findall("\s\w+\s\d+ г.", periodstr) 
+        periods = [x.strip() for x in re.findall("\s\w+\s\d+ г.", periodstr)]
         try: 
             if len(periods) > 0:
                 for period in periods:
@@ -55,6 +55,8 @@ def getPeriod(periodstr):
 
 def getResult(data):
     row = data.iloc[[-1][0]]
+    row = row.astype(str).str.replace(' ', '')
+    row = row.astype(str).str.replace(',', '.')
     row = pd.to_numeric(row, errors='coerce')
     row.dropna(inplace=True)
     return row
@@ -107,7 +109,7 @@ def getDefinition(data):
         idx = idx+1
     if (state <= STATE.stHEADER.value) :
         raise Exception('Incorrect header structure')
-    return {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': columns, 'cols2del': cols2del} #, 'OpenD':openD, 'OpenBalance':openBalance, 'FirstRowIDX': firstrowidx, 'columns': columns}
+    return {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': columns, 'cols2del': cols2del}
 
 
 #Совершенно костыльная процедура
@@ -141,8 +143,8 @@ def addMissedColumns(data, columns, cols2del):
 #Returns (trancated df, openbalance, controlDebet, controlCredit, controlBalance)
 def getControlValues(df) :
     #Берём контрольные данные из строки "Обороты за период и сальдо на конец"
-    firstrow = df.loc[df[0].str.contains(BALANCE_STR, na=False)]
-    lastrow = df.loc[df[0].str.contains(CHECK_STR[0], na=False) | df[0].str.contains(CHECK_STR[1], na=False)]
+    firstrow = df.loc[df.iloc[:,0].str.contains(BALANCE_STR, na=False)]
+    lastrow = df.loc[df.iloc[:,0].str.contains(CHECK_STR[0], na=False) | df.iloc[:,0].str.contains(CHECK_STR[1], na=False)]
 
     openbalance = 0.0
     try :
@@ -185,42 +187,29 @@ def getControlValues(df) :
     return (df.iloc[lowidx:highidx,:], openbalance, controlDebet, controlCredit, controlBalance)
 
 
-
-def getDataFrameFromExcel(df, clientid, xlsname):
-    
-    #Из первых строк файла получаем имя компании, начало и конец периода, баланс на начало периода, 
-    #   магический столбец 'Д' и список значимых столбцов (для объединённых ячеек excel)
-    #try:
-    definition = getDefinition(df)
-
-    #Пытаемся найти отбор по счёту
-    searchrow = df.loc[df[0] == SEARCH_STR]
-    searchstr = ""
-    if not searchrow.empty :
-        searchstr = searchrow[2]
-
-    df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
-
-
-    if not df.empty :
-        df = df.dropna(axis=1,how='all')
-        df = addMissedColumns(df, definition['columns'], definition['cols2del'])
-        df.columns = ["Date", "Document"
+COLUMNS = ["Date", "Document"
                     , "Debet_Analitics", "Credit_Analitics"
                     , "Debet_Account", "Debet_Amount"
                     , "Credit_Account", "Credit_Amount"
                     , "Balance_D", "Balance"]
+
+def publishgDataFrame(df, xlsname, clientid, searchstr, definition, openbalance, controlDebet, controlCredit, controlBalance) :
+    
+    if not df.empty :
+        df.columns = COLUMNS
     else :
-        df = pd.DataFrame(columns = ["Date", "Document"
-                , "Debet_Analitics", "Credit_Analitics"
-                , "Debet_Account", "Debet_Amount"
-                , "Credit_Account", "Credit_Amount"
-                , "Balance_D", "Balance"])
+        df = pd.DataFrame(columns = COLUMNS)
         
     df['Debet_Amount'].fillna(0.0, inplace=True)
     df['Credit_Amount'].fillna(0.0, inplace=True)
     df['Balance'].fillna(0.0, inplace=True)
-    #df.columns = header[0:len(readablecols)]
+
+    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(' ', '')
+    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(',', '.')
+    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(' ', '')
+    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(',', '.')
+    df['Balance'] = df['Balance'].astype(str).str.replace(' ', '')
+    df['Balance'] = df['Balance'].astype(str).str.replace(',', '.')
 
     #Добавляем столбцы из заголовка
     df['Company_Name'] = definition['Company_Name']
@@ -231,20 +220,11 @@ def getDataFrameFromExcel(df, clientid, xlsname):
     df['file'] = xlsname
     df['processdate'] = datetime.now()
 
-    
     #Убираем строки с промежуточным результатом (типа Сальдо на сентябрь etc)
     df['Date'] = df['Date'].fillna("NODATE")
-    
     df['Date'] = df['Date'].apply(lambda x: f"{x.strftime('%d-%d-%Y')}" if isinstance(x,datetime) else f"{x}")
-
     df = df[df.Date.astype(str).str.match(DATE_REGEX).fillna(False)]
 
-    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(' ', '')
-    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(',', '.')
-    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(' ', '')
-    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(',', '.')
-    df['Balance'] = df['Balance'].astype(str).str.replace(' ', '')
-    df['Balance'] = df['Balance'].astype(str).str.replace(',', '.')
     #Проверяем коррекность данных: сверка оборотов и остатков по счёту
     try:
         df['Debet_Amount'] = pd.to_numeric(df['Debet_Amount'], errors='coerce')
@@ -285,6 +265,29 @@ def getDataFrameFromExcel(df, clientid, xlsname):
     df.insert(df.shape[1], 'CLIENTID', clientid)
     df.insert(df.shape[1], 'SUBSET', searchstr)
     df.insert(df.shape[1], 'Result', status)
+
+    return df
+
+def getDataFrameFromExcel(df, clientid, xlsname):
+    
+    #Из первых строк файла получаем имя компании, начало и конец периода, баланс на начало периода, 
+    #   магический столбец 'Д' и список значимых столбцов (для объединённых ячеек excel)
+    #try:
+    definition = getDefinition(df)
+
+    #Пытаемся найти отбор по счёту
+    searchrow = df.loc[df[0] == SEARCH_STR]
+    searchstr = ""
+    if not searchrow.empty :
+        searchstr = searchrow[2]
+
+    df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
+
+    if not df.empty :
+        df = df.dropna(axis=1,how='all')
+        df = addMissedColumns(df, definition['columns'], definition['cols2del'])
+
+    df = publishgDataFrame(df, xlsname, clientid, searchstr, definition, openbalance, controlDebet, controlCredit, controlBalance)
     return df
 
 def getHeadLines(pdfname: str, nlines: int = 3) :
@@ -293,7 +296,7 @@ def getHeadLines(pdfname: str, nlines: int = 3) :
         for element in page_layout :
             if isinstance(element, LTTextBoxHorizontal) :
                 txt = element.get_text()
-                lines = txt.split("\n")
+                lines = [x.strip() for x in txt.split("\n")]
                 for line in lines :
                     if len(line) > 0 :
                         result.append(line)
@@ -304,23 +307,23 @@ def getHeadLines(pdfname: str, nlines: int = 3) :
 def processPDF(pdfname) :
     berror = False
     df = pd.DataFrame()
-    headers = getHeadLines(pdfname, 3)
+    headers = getHeadLines(pdfname, 4)
+    companyName = headers[0]
+    periods = getPeriod(headers[1])
+    
+    definition = {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': [], 'cols2del': []}
+    
     if len(headers)>=2 and headers[1].startswith("Карточка счета 51") :
-        tables = camelot.read_pdf(pdfname, pages="all")
-
+        tables = camelot.read_pdf(pdfname, pages="all", line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
+        
         for tbl in tables :
             df = pd.concat([df, tbl.df])
+        df = df.reset_index(drop=True)
+        df[[8,9]] = df[8].str.split("\n", n = 1, expand = True)
 
-        #Берём контрольные данные из строки "Обороты за период и сальдо на конец"
-        firstrow = df.loc[df[0].str.contains(BALANCE_STR, na=False)]
-        lastrow = df.loc[df[0].str.contains(CHECK_STR[0], na=False) | df[0].str.contains(CHECK_STR[1], na=False)]
-           
+        df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
+        df = publishgDataFrame(df, pdfname, clientid, "", definition, openbalance, controlDebet, controlCredit, controlBalance)
 
-        df.columns = ["Date", "Document"
-                , "Debet_Analitics", "Credit_Analitics"
-                , "Debet_Account", "Debet_Amount"
-                , "Credit_Account", "Credit_Amount"
-                , "Balance_D", "Balance"]
     return (df, berror)
 
 
