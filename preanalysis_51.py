@@ -7,7 +7,6 @@ import locale
 import shutil
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
-import PyPDF2
 
 import camelot
 from pdfminer.high_level import extract_pages
@@ -291,7 +290,7 @@ def getDataFrameFromExcel(df, clientid, xlsname):
     df = publishgDataFrame(df, xlsname, clientid, searchstr, definition, openbalance, controlDebet, controlCredit, controlBalance)
     return df
 
-def getHeadLines(pdfname: str, nlines: int = 3) :
+def getHeadLinesPDF(pdfname: str, nlines: int = 3) :
     result = []
     for page_layout in extract_pages(pdfname, maxpages=1) :
         for element in page_layout :
@@ -305,74 +304,74 @@ def getHeadLines(pdfname: str, nlines: int = 3) :
                             return result
     return result
 
-def pdfPagesCount(pdfname) :
-    with open(pdfname,'rb') as f:
-        pdfReader = PyPDF2.PdfFileReader(f)
-        return pdfReader.getNumPages()
+
+DOCTYPES = ["выписка", "оборотно-сальдовая ведомость", "обороты счета", "обороты счёта", "анализ счета", "анализ счёта", "карточка счёта 51", "карточка счета 51"]
 
 def processPDF(pdfname, clientid) :
+    kinds = []
     berror = False
-    df = pd.DataFrame()
-    headers = getHeadLines(pdfname, 4)
-    
-    if len(headers)>=2 and headers[1].startswith("Карточка счета 51") :
-        companyName = headers[0]
-        periods = getPeriod(headers[1])
-        
-        definition = {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': [], 'cols2del': []}
+    try :
+        headers = getHeadLinesPDF(pdfname, 10)
+        suitable = [kind for kind in DOCTYPES if len([row for row in headers if kind in row.lower()])>0]
+        if len(suitable) > 0 :
+            kinds.append(suitable[0])
+        print(pdfname, "::KIND:", kinds)
 
-        #tables = camelot.read_pdf(pdfname, pages="all", line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
-        npages = pdfPagesCount(pdfname)
-        spage = 1
-        cchunk = 100
-
-        while spage < npages :
-            lpage = min(spage + cchunk - 1, npages)
-            tables = camelot.read_pdf(pdfname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
-            for tbl in tables :
-                df = pd.concat([df, tbl.df])
-            print(f'{datetime.now()}: PDF {pdfname} processed pages {spage}-{lpage}')
-            spage = lpage + 1
-        
-        #tables = camelot.read_pdf(pdfname, pages="all", line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
-        
-        #for tbl in tables :
-        #    df = pd.concat([df, tbl.df])
-        df = df.reset_index(drop=True)
-        df[[8,9]] = df[8].str.split("\n", n = 1, expand = True)
-
-        df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
-        df = publishgDataFrame(df, pdfname, clientid, "", definition, openbalance, controlDebet, controlCredit, controlBalance)
+        #for header in filter(lambda row: any([kind for kind in DOCTYPES if kind in row.lower()]), headers) :
+        #    print(pdfname, ":", header)
+    except Exception as err :
+        berror = True   
+        print(pdfname, '_', 'ND', ':ERROR:', err)
+        logstr = "ERROR:" + clientid + ":" + os.path.basename(pdfname) + ":ND:0:" + type(err).__name__ + " " + str(err) + "\n"
+        logf.write(logstr)
+    if len(kinds) > 0 :
+        return (kinds[0], berror)
     else :
-        berror = True
-    return (df, berror)
+        return ("UNDEFINED", berror)
 
+def getHeadLinesEXCEL(data, nlines: int = 3):
+    idx = 0
+    result = []
+    while(idx < data.shape[0] and idx < nlines):
+        row = data.iloc[[idx][0]]
+        result.append(row.dropna(how='all'))
+        idx = idx+1
+    return result
 
 def processExcel(xlsname, clientid) :
     berror = False
-    df = pd.DataFrame()
     sheets = pd.read_excel(xlsname, header=None, sheet_name=None)
+    kinds = []
     if len(sheets) > 1 :
         print(xlsname, ':WARNING:', len(sheets), " sheets found")
+    #if len(sheets) > 1 :
     for sheet in sheets :
         try :
-            df = pd.concat([df, getDataFrameFromExcel(sheets[sheet], clientid, xlsname + "_" + sheet)])
+            headers = getHeadLinesEXCEL(sheets[sheet], 10)
+            suitable = [kind for kind in DOCTYPES if len([row for row in headers if any(row.astype(str).str.contains(kind, case=False).dropna(how='all'))])>0]
+            if len(suitable) > 0 :
+                kinds.append(suitable[0])
+            print(xlsname, ":", sheet, ":KIND:", kinds)
+            break
+            #for header in filter(lambda row: any([kind for kind in KINDS if any(row.str.contains(kind, case=False).dropna(how='all'))]), headers) :
+            #    print(xlsname, ":", header.values)
         except Exception as err :
             berror = True   
             print(xlsname, '_', sheet, ':ERROR:', err)
             logstr = "ERROR:" + clientid + ":" + os.path.basename(xlsname) + ":" + sheet + ":0:" + type(err).__name__ + " " + str(err) + "\n"
             logf.write(logstr)
-    return (df, berror)
+    if len(kinds) > 0 :
+        return (kinds[0], berror)
+    else :
+        return ("UNDEFINED", berror)
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument("-d", "--data", default="../Data", help="Data folder")
+parser.add_argument("-d", "--data", default="../Acc51", help="Data folder")
 parser.add_argument("-r", "--done", default="../Done", help="Done folder")
-parser.add_argument("-l", "--logfile", default="./acc51log.txt", help="Log file")
-parser.add_argument("-o", "--output", default="./parsed", help="Resulting file name (no extension)")
+parser.add_argument("-l", "--logfile", default="./preanalys51log_new.txt", help="Log file")
+parser.add_argument("-o", "--output", default="./preanalys51_new", help="Resulting file name (no extension)")
 parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
 parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
-parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
-parser.add_argument("--excel", default=True, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
 args = vars(parser.parse_args())
 
 
@@ -388,52 +387,40 @@ cnt = 0
 #outname = "parsed.csv"
 outname = outbasename + ".csv"
 
-FILEEXT = []
-if args["excel"] :
-    FILEEXT = FILEEXT + ['.xls', '.xlsx', '.xml']
-if args["pdf"] :
-    FILEEXT = FILEEXT + ['.pdf']
-
-print("START", "\ninput:", DIRPATH, "\nlog:", logname, "\noutput:", outname,"\nsplit:", bSplit, "\nmaxinput:", maxFiles, "\ndone:", doneFolder, "\nextenstions:", FILEEXT)
+FILEEXT = ['.xls', '.xlsx', '.xml', '.pdf']
 
 for root, dirs, files in os.walk(DIRPATH) :
-    #for name in filter(lambda file: file.lower().endswith('.xls') or file.lower().endswith('.xlsx') or file.lower().endswith('.pdf'), files) :
     for name in filter(lambda file: any([ext for ext in FILEEXT if (file.lower().endswith(ext))]), files) :
         try :
             try :
+                fileext = Path(name).suffix
                 parts = os.path.split(root)
                 clientid = parts[1]
                 inname = root + os.sep + name  
 
-                print("START: ", clientid, ": " , name)
                 if name.lower().endswith('.xls') or name.lower().endswith('.xlsx') :
                     #sheets = pd.read_excel(inname, header=None, sheet_name=None)
                     if bSplit and cnt % maxFiles == 0 :
                         outname = outbasename + str(cnt) + ".csv"
-                    df, berror = processExcel(inname, clientid)
+                    kind, berror = processExcel(inname, clientid)
                 elif name.lower().endswith('.pdf') :
-                    df, berror = processPDF(inname, clientid)
+                    kind, berror = processPDF(inname, clientid)
 
-                if not df.empty :
+                if len(kind) > 0 :
                     cnt = cnt + 1
-                    if (Path(outname).is_file()):
-                        df.to_csv(outname, mode="a", header=False, index=False)
-                    else:
-                        df.to_csv(outname, mode="w", index=False)
 
                     try :
-                        logstr = "PROCESSED:" + clientid + ":" + os.path.basename(inname) + ":ALL:" + str(df.shape[0]) + ":" + outname + "\n"
+                        logstr = "PROCESSED:" + clientid + ":" + os.path.basename(inname) + ":ALL:" + kind + ":" + fileext + ":" + outname + "\n"
                         logf.write(logstr)
                     except Exception as err:
-                        logstr = "PROCESSED:" + clientid + ":ND:ND:ND:ERROR " + err + "\n"
+                        logstr = "PROCESSED:" + clientid + ":ND:ND:ND:ND:ERROR " + err + "\n"
                         logf.write(logstr)
 
-                if not berror :
-                    shutil.move(inname, doneFolder + clientid + '_' + os.path.basename(inname))
-                print("DONE: ", clientid, ": " , name)
+                #if not berror :
+                #    shutil.move(inname, doneFolder + clientid + '_' + os.path.basename(inname))
             except Exception as err :
                 print(inname, ':ERROR:', err)
-                logstr = "FILE_ERROR:" + clientid + ":" + os.path.basename(inname) + "::0:" + type(err).__name__ + " " + str(err) + "\n"
+                logstr = "FILE_ERROR:" + clientid + ":" + os.path.basename(inname) + "::::" + type(err).__name__ + " " + str(err) + "\n"
                 logf.write(logstr)
         except Exception as err :
             print('!!!CRITICAL ERROR!!!', err)
