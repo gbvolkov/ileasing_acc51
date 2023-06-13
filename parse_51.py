@@ -8,6 +8,7 @@ import shutil
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
 import PyPDF2
+import sys
 
 import camelot
 from pdfminer.high_level import extract_pages
@@ -197,6 +198,7 @@ COLUMNS = ["Date", "Document"
 def publishgDataFrame(df, xlsname, clientid, searchstr, definition, openbalance, controlDebet, controlCredit, controlBalance) :
     
     if not df.empty :
+        df = df.iloc[:,0:10]
         df.columns = COLUMNS
     else :
         df = pd.DataFrame(columns = COLUMNS)
@@ -242,25 +244,25 @@ def publishgDataFrame(df, xlsname, clientid, searchstr, definition, openbalance,
             closeBalance = 0
         balanceCheck = (openBalance + totalDebet - totalCredit).round(2)
     except Exception:
-        print(xlsname, ':ERROR.:', 'Checksum cannot be calculated!')
+        print(datetime.now(), ":", xlsname, ':ERROR.:', 'Checksum cannot be calculated!')
         totalDebet = 0.0
         totalCredit = 0.0
 
     status = 0
     if totalDebet != controlDebet :
-        print(xlsname, ':WARNING. CONTROL CHECK FAILED:', 'DEBIT:', totalDebet, "!=", controlDebet)
+        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'DEBIT:', totalDebet, "!=", controlDebet)
         status = status+1
     if totalCredit != controlCredit :
-        print(xlsname, ':WARNING. CONTROL CHECK FAILED:', 'CREDIT:', totalCredit, "!=", controlCredit)
+        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'CREDIT:', totalCredit, "!=", controlCredit)
         status = status+2
     if closeBalance != controlBalance :
-        print(xlsname, ':WARNING. CONTROL CHECK FAILED:', 'CLOSE BALANCE:', closeBalance, "!=", controlBalance)
+        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'CLOSE BALANCE:', closeBalance, "!=", controlBalance)
         status = status+4
     if  balanceCheck != controlBalance:
-        print(xlsname, ':WARNING. CONTROL CHECK FAILED:', 'BALANCE CHECK', balanceCheck, "!=", controlBalance)
+        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'BALANCE CHECK', balanceCheck, "!=", controlBalance)
         status = status+8
     if totalDebet == 0.0 and totalCredit == 0.0:
-        print(xlsname, ':WARNING. Zero turnovers')
+        print(datetime.now(), ":", xlsname, ':WARNING. Zero turnovers')
         status = status+16
 
     df.insert(df.shape[1], 'CLIENTID', clientid)
@@ -279,8 +281,11 @@ def getDataFrameFromExcel(df, clientid, xlsname):
     #Пытаемся найти отбор по счёту
     searchrow = df.loc[df[0] == SEARCH_STR]
     searchstr = ""
-    if not searchrow.empty :
-        searchstr = searchrow[2]
+    try :
+        if not searchrow.empty :
+            searchstr = searchrow[2].values[0]
+    except Exception as err :
+        searchstr = ""
 
     df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
 
@@ -310,11 +315,11 @@ def pdfPagesCount(pdfname) :
         pdfReader = PyPDF2.PdfFileReader(f)
         return pdfReader.getNumPages()
 
-def processPDF(pdfname, clientid) :
+def processPDF(pdfname, clientid, logf) :
     berror = False
     df = pd.DataFrame()
     headers = getHeadLines(pdfname, 4)
-    
+    npages = 0
     if len(headers)>=2 and headers[1].startswith("Карточка счета 51") :
         companyName = headers[0]
         periods = getPeriod(headers[1])
@@ -325,13 +330,17 @@ def processPDF(pdfname, clientid) :
         npages = pdfPagesCount(pdfname)
         spage = 1
         cchunk = 100
-
-        while spage < npages :
+        if npages >= 500 :
+            print(datetime.now(), ":", pdfname, ':WARINING: huge pdf:', npages, " pages")
+            sys.stdout.flush()
+        while spage <= npages :
             lpage = min(spage + cchunk - 1, npages)
             tables = camelot.read_pdf(pdfname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
             for tbl in tables :
                 df = pd.concat([df, tbl.df])
-            print(f'{datetime.now()}: PDF {pdfname} processed pages {spage}-{lpage}')
+            if npages >= 500 :
+                print(datetime.now(), ":", pdfname, f':PROCESSED: {spage}-{lpage} of ', npages, " pages")
+                sys.stdout.flush()
             spage = lpage + 1
         
         #tables = camelot.read_pdf(pdfname, pages="all", line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
@@ -339,30 +348,36 @@ def processPDF(pdfname, clientid) :
         #for tbl in tables :
         #    df = pd.concat([df, tbl.df])
         df = df.reset_index(drop=True)
-        df[[8,9]] = df[8].str.split("\n", n = 1, expand = True)
+        df['Contains_D'] = list(map(lambda x: x.startswith('Д\n'), df[8].astype(str)))
+        if df['Contains_D'].any() :
+            df[[8,9]] = df[8].str.split("\n", n = 1, expand = True)
+        else :
+            df[9] = df[8]
+            df[8] = ''
+        df = df.drop(axis=1, columns=['Contains_D'])
 
         df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
         df = publishgDataFrame(df, pdfname, clientid, "", definition, openbalance, controlDebet, controlCredit, controlBalance)
     else :
         berror = True
-    return (df, berror)
+    return (df, npages, berror)
 
 
-def processExcel(xlsname, clientid) :
+def processExcel(xlsname, clientid, logf) :
     berror = False
     df = pd.DataFrame()
     sheets = pd.read_excel(xlsname, header=None, sheet_name=None)
     if len(sheets) > 1 :
-        print(xlsname, ':WARNING:', len(sheets), " sheets found")
+        print(datetime.now(), ":", xlsname, ':WARNING:', len(sheets), " sheets found")
     for sheet in sheets :
         try :
             df = pd.concat([df, getDataFrameFromExcel(sheets[sheet], clientid, xlsname + "_" + sheet)])
         except Exception as err :
             berror = True   
-            print(xlsname, '_', sheet, ':ERROR:', err)
-            logstr = "ERROR:" + clientid + ":" + os.path.basename(xlsname) + ":" + sheet + ":0:" + type(err).__name__ + " " + str(err) + "\n"
+            print(datetime.now(), ":", xlsname, '_', sheet, ':ERROR:', err)
+            logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(xlsname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
             logf.write(logstr)
-    return (df, berror)
+    return (df, len(sheets), berror)
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument("-d", "--data", default="../Data", help="Data folder")
@@ -385,34 +400,39 @@ doneFolder = args["done"] + "/"
 
 logf = open(logname, "w", encoding='utf-8')
 cnt = 0
+cdone = 0
 #outname = "parsed.csv"
 outname = outbasename + ".csv"
 
 FILEEXT = []
 if args["excel"] :
-    FILEEXT = FILEEXT + ['.xls', '.xlsx', '.xml']
+    FILEEXT = FILEEXT + ['.xls', '.xlsx']
 if args["pdf"] :
     FILEEXT = FILEEXT + ['.pdf']
 
-print("START", "\ninput:", DIRPATH, "\nlog:", logname, "\noutput:", outname,"\nsplit:", bSplit, "\nmaxinput:", maxFiles, "\ndone:", doneFolder, "\nextenstions:", FILEEXT)
+sys.stdout.reconfigure(encoding="utf-8")
+print("START:", datetime.now(), "\ninput:", DIRPATH, "\nlog:", logname, "\noutput:", outname,"\nsplit:", bSplit, "\nmaxinput:", maxFiles, "\ndone:", doneFolder, "\nextensions:", FILEEXT)
 
 for root, dirs, files in os.walk(DIRPATH) :
     #for name in filter(lambda file: file.lower().endswith('.xls') or file.lower().endswith('.xlsx') or file.lower().endswith('.pdf'), files) :
     for name in filter(lambda file: any([ext for ext in FILEEXT if (file.lower().endswith(ext))]), files) :
+        cdone = cdone + 1
+        if cdone % 10 == 0 :
+            logf.flush()
         try :
+            pages = 0
             try :
                 parts = os.path.split(root)
                 clientid = parts[1]
                 inname = root + os.sep + name  
-
-                print("START: ", clientid, ": " , name)
+                print(datetime.now(), ":START: ", clientid, ": ", name)
                 if name.lower().endswith('.xls') or name.lower().endswith('.xlsx') :
                     #sheets = pd.read_excel(inname, header=None, sheet_name=None)
                     if bSplit and cnt % maxFiles == 0 :
                         outname = outbasename + str(cnt) + ".csv"
-                    df, berror = processExcel(inname, clientid)
+                    df, pages, berror = processExcel(inname, clientid, logf)
                 elif name.lower().endswith('.pdf') :
-                    df, berror = processPDF(inname, clientid)
+                    df, pages, berror = processPDF(inname, clientid, logf)
 
                 if not df.empty :
                     cnt = cnt + 1
@@ -422,22 +442,23 @@ for root, dirs, files in os.walk(DIRPATH) :
                         df.to_csv(outname, mode="w", index=False)
 
                     try :
-                        logstr = "PROCESSED:" + clientid + ":" + os.path.basename(inname) + ":ALL:" + str(df.shape[0]) + ":" + outname + "\n"
+                        #logstr = "PROCESSED:" + clientid + ":" + os.path.basename(inname) + ":ALL:" + str(df.shape[0]) + ":" + outname + "\n"
+                        logstr = f"{datetime.now()}:PROCESSED: {clientid}:{os.path.basename(inname)}:{pages}:{str(df.shape[0])}:{outname}\n"
                         logf.write(logstr)
                     except Exception as err:
-                        logstr = "PROCESSED:" + clientid + ":ND:ND:ND:ERROR " + err + "\n"
+                        logstr = f"{datetime.now()}:PROCESSED:{clientid}:ND:{pages}:ND:ERROR {err}\n"
                         logf.write(logstr)
 
                 if not berror :
                     shutil.move(inname, doneFolder + clientid + '_' + os.path.basename(inname))
-                print("DONE: ", clientid, ": " , name)
+                print(datetime.now(), ":DONE: ", clientid, ": ", name)
             except Exception as err :
-                print(inname, ':ERROR:', err)
-                logstr = "FILE_ERROR:" + clientid + ":" + os.path.basename(inname) + "::0:" + type(err).__name__ + " " + str(err) + "\n"
+                print(datetime.now(), ":", inname, ":ERROR:", err)
+                logstr = f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n"
                 logf.write(logstr)
+            sys.stdout.flush()
         except Exception as err :
-            print('!!!CRITICAL ERROR!!!', err)
-            logstr = "CRITICAL ERROR:" + clientid + ":ND:ND:ERROR\n"
+            print(datetime.now(), f":{clientid}:!!!CRITICAL ERROR!!!", err)
+            logstr = f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n"
             logf.write(logstr)
-
 logf.close()
