@@ -227,26 +227,26 @@ def getControlledValues(df, inname) -> tuple[float, float, float, float, float]:
             closeBalance = df.iloc[[-1][0]]['Balance'].round(2)
         balanceCheck = round(openBalance + totalDebet - totalCredit, 2)
     except Exception:
-        print(datetime.now(), ":", inname, ':ERROR.:', 'Checksum cannot be calculated!')
+        print(f"{datetime.now()}:{inname}:ERROR.:Checksum cannot be calculated!")
     return(closeBalance, openBalance, totalDebet, totalCredit, balanceCheck)
 
 def checkControlledValues(closeBalance, openBalance, balanceCheck, totalDebet, totalCredit,
                                 controlBalance, controlDebet, controlCredit, inname) -> int:
     status = 0
     if totalDebet != controlDebet:
-        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'DEBIT:', totalDebet, "!=", controlDebet)
+        print(f"{datetime.now()}:{inname}:WARNING. CONTROL CHECK FAILED:DEBIT:{totalDebet}!={controlDebet}")
         status += 1
     if totalCredit != controlCredit:
-        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'CREDIT:', totalCredit, "!=", controlCredit)
+        print(f"{datetime.now()}:{inname}:WARNING. CONTROL CHECK FAILED:CREDIT:{totalCredit}!={controlCredit}")
         status += 2
     if closeBalance != controlBalance:
-        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'CLOSE BALANCE:', closeBalance, "!=", controlBalance)
+        print(f"{datetime.now()}:{inname}:WARNING. CONTROL CHECK FAILED:CLOSE BALANCE:{closeBalance}!={controlBalance}")
         status += 4
     if balanceCheck != controlBalance:
-        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'BALANCE CHECK', balanceCheck, "!=", controlBalance)
+        print(f"{datetime.now()}:{inname}:WARNING. CONTROL CHECK FAILED:BALANCE CHECK:{balanceCheck}!={controlBalance}")
         status += 8
     if totalDebet == 0.0 and totalCredit == 0.0:
-        print(datetime.now(), ":", inname, ':WARNING. Zero turnovers')
+        print(f"{datetime.now()}:{inname}:WARNING. Zero turnovers")
         status += 16
     return status
 
@@ -373,14 +373,14 @@ def getDataFrameFromPDF(inname) -> pd.DataFrame:
     spage = 1
     cchunk = 100
     if npages >= 500 :
-        print(datetime.now(), ":", inname, ':WARINING: huge pdf:', npages, " pages")
+        print(f"{datetime.now()}:{inname}:WARINING: huge pdf:{npages} pages")
     while spage <= npages :
         lpage = min(spage + cchunk - 1, npages)
         tables = camelot.read_pdf(inname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
         for tbl in tables :
             df = pd.concat([df, tbl.df])
         if npages >= 500 :
-            print(datetime.now(), ":", inname, f':PROCESSED: {spage}-{lpage} of ', npages, " pages")
+            print(f"{datetime.now()}:{inname}:PROCESSED: {spage}-{lpage} of {npages} pages")
         spage = lpage + 1
     return df.reset_index(drop=True)
 
@@ -438,7 +438,7 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
     df = pd.DataFrame()
     sheets = pd.read_excel(inname, header=None, sheet_name=None)
     if len(sheets) > 1 :
-        print(datetime.now(), ":", inname, ':WARNING:', len(sheets), " sheets found")
+        print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
     for sheet in sheets:
         try:
             df = pd.concat(
@@ -451,7 +451,7 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
             )
         except Exception as err :
             berror = True   
-            print(datetime.now(), ":", inname, '_', sheet, ':ERROR:', err)
+            print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
             logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
             logf.write(logstr)
     return (df, len(sheets), berror)
@@ -472,7 +472,7 @@ def process(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFra
 
 def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
     filename = os.path.basename(inname)
-    print(datetime.now(), ":START: ", clientid, ": ", filename)
+    print(f"{datetime.now()}:START: {clientid}: {filename}")
 
     df, pages, berror = process(inname, clientid, logf)
     if not berror:
@@ -484,7 +484,7 @@ def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
             berror = True
             logstr = f"{datetime.now()}:EMPTY: {clientid}:{filename}:{pages}:0:{outname}\n"
         logf.write(logstr)
-    print(datetime.now(), ":DONE: ", clientid, ": ", filename)
+    print(f"{datetime.now()}:DONE: {clientid}: {filename}")
     return not berror
 
 def getFileExtList(isExcel, isPDF) -> list[str]:
@@ -530,9 +530,9 @@ def main():
                         cnt += runParsing(clientid, outname, inname, doneFolder, logf)
                     except Exception as err:
                         logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
-                        print(datetime.now(), ":", inname, ":ERROR:", err)
+                        print(f"{datetime.now()}:{inname}:ERROR:{err}")
                 except Exception as err:
-                    print(datetime.now(), f":{clientid}:!!!CRITICAL ERROR!!!", err)
+                    print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
                     logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
 
 def getParameters():
