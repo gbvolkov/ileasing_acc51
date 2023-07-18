@@ -372,7 +372,6 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
         berror = True
     return (df, npages, berror)
 
-
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
     df = pd.DataFrame()
