@@ -335,14 +335,12 @@ def get_headlines_pdf(pdfname: str, nlines: int = 3) -> list[str]:
     :rtype: list[str]
     """
     result: list[str] = []
-    for page_layout in extract_pages(pdfname, maxpages=1) :
-        for element in page_layout :
-            if isinstance(element, LTTextBoxHorizontal) :
+    for page_layout in extract_pages(pdfname, maxpages=1):
+        for element in page_layout:
+            if isinstance(element, LTTextBoxHorizontal):
                 txt = element.get_text()
                 lines = [x.strip() for x in txt.split("\n")]
-                for line in lines :
-                    if len(line) > 0 :
-                        result.append(line)
+                result.extend(line for line in lines if len(line) > 0)
     return result
 
 def get_headlines_pdf2(pdfname: str, nlines: int = 3) -> list[str]:
@@ -402,20 +400,42 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
     df = pd.DataFrame()
     headers = get_headlines_pdf2(inname, 4)
     npages = 0
-    
-    if len(headers)>=2 and headers[1].startswith("Карточка счета 51") :
-        companyName = headers[0]
-        periods = getPeriod(headers[1])
-        
-        definition = {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': [], 'cols2del': []}
-        df = getDataFrameFromPDF(inname)
-        df = normalizeDColumntForPDF(df)
 
-        df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
-        df = publishgDataFrame(df, inname, clientid, "", definition, openbalance, controlDebet, controlCredit, controlBalance)
-    else :
+    if len(headers)>=2 and headers[1].startswith("Карточка счета 51"):
+        df = prepareDataFromPDF(headers, inname, clientid)
+    else:
         berror = True
     return (df, npages, berror)
+
+
+# TODO Rename this here and in `processPDF`
+def prepareDataFromPDF(headers, inname, clientid):
+    companyName = headers[0]
+    periods = getPeriod(headers[1])
+
+    definition = {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': [], 'cols2del': []}
+    result = getDataFrameFromPDF(inname)
+    result = normalizeDColumntForPDF(result)
+
+    (
+        result,
+        openbalance,    
+        controlDebet,
+        controlCredit,
+        controlBalance,
+    ) = getControlValues(result)
+    result = publishgDataFrame(
+        result,
+        inname,
+        clientid,
+        "",
+        definition,
+        openbalance,
+        controlDebet,
+        controlCredit,
+        controlBalance,
+    )
+    return result
 
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
