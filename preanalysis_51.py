@@ -168,4 +168,5 @@ def main():
                     logstr = "CRITICAL ERROR:" + clientid + ":ND:ND:ERROR\n"
                     logf.write(logstr)
 
-main()
+if __name__ == "__main__":
+    main()
