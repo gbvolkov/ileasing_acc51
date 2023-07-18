@@ -20,14 +20,12 @@ def get_headlines_pdf(pdfname: str, nlines: int = 3) -> list[str]:
     :rtype: list[str]
     """
     result: list[str] = []
-    for page_layout in extract_pages(pdfname, maxpages=1) :
-        for element in page_layout :
-            if isinstance(element, LTTextBoxHorizontal) :
+    for page_layout in extract_pages(pdfname, maxpages=1):
+        for element in page_layout:
+            if isinstance(element, LTTextBoxHorizontal):
                 txt = element.get_text()
                 lines = [x.strip() for x in txt.split("\n")]
-                for line in lines :
-                    if len(line) > 0 :
-                        result.append(line)
+                result.extend(line for line in lines if len(line) > 0)
     return result
 
 def get_headlines_pdf2(pdfname: str, nlines: int = 3) -> list[str]:
@@ -121,8 +119,7 @@ def process_excel(xlsname, clientid, logf):
         print(xlsname, ':WARNING:', len(sheets), " sheets found")
     for sheet in sheets:
         try:
-            headers = get_headlines_excel(sheets[sheet], 10)
-            if headers:
+            if headers := get_headlines_excel(sheets[sheet], 10):
                 if suitable := [
                     kind
                     for kind in DOCTYPES
