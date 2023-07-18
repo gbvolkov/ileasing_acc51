@@ -405,23 +405,23 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
         berror = True
     return (df, npages, berror)
 
-def prepareDataFromPDF(headers, inname, clientid):
+def prepareDataFromPDF(headers: list[str], inname: str, clientid: str) -> pd.DataFrame:
     companyName = headers[0]
     periods = getPeriod(headers[1])
 
     definition = {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': [], 'cols2del': []}
-    result = getDataFrameFromPDF(inname)
-    result = normalizeDColumntForPDF(result)
+    df = getDataFrameFromPDF(inname)
+    df = normalizeDColumntForPDF(df)
 
     (
-        result,
+        df,
         openbalance,    
         controlDebet,
         controlCredit,
         controlBalance,
-    ) = getControlValues(result)
-    result = publishgDataFrame(
-        result,
+    ) = getControlValues(df)
+    df = publishgDataFrame(
+        df,
         inname,
         clientid,
         "",
@@ -431,7 +431,7 @@ def prepareDataFromPDF(headers, inname, clientid):
         controlCredit,
         controlBalance,
     )
-    return result
+    return df
 
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
