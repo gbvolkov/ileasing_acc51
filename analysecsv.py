@@ -11,7 +11,6 @@ from argparse import (
 )
 import sys
 
-
 def transform_csv(outname, inname, csv_file_delimeter):
     with open(outname, "w+", encoding="utf-8", newline='') as fout:
         with open(inname, "r", encoding="utf-8") as fin:
