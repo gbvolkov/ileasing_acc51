@@ -364,7 +364,6 @@ def get_headlines_pdf2(pdfname: str, nlines: int = 3) -> list[str]:
         result.extend([line for line in lines if len(line) > 0])
     return result
 
-
 def pdfPagesCount(pdfname)->int:
     with open(pdfname,'rb') as f:
         pdfReader = PyPDF2.PdfFileReader(f)
