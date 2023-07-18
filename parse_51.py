@@ -374,7 +374,6 @@ def getDataFrameFromPDF(inname) -> pd.DataFrame:
     cchunk = 100
     if npages >= 500 :
         print(datetime.now(), ":", inname, ':WARINING: huge pdf:', npages, " pages")
-        sys.stdout.flush()
     while spage <= npages :
         lpage = min(spage + cchunk - 1, npages)
         tables = camelot.read_pdf(inname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
@@ -382,7 +381,6 @@ def getDataFrameFromPDF(inname) -> pd.DataFrame:
             df = pd.concat([df, tbl.df])
         if npages >= 500 :
             print(datetime.now(), ":", inname, f':PROCESSED: {spage}-{lpage} of ', npages, " pages")
-            sys.stdout.flush()
         spage = lpage + 1
     return df.reset_index(drop=True)
 
@@ -512,30 +510,17 @@ def getArguments():
     return vars(parser.parse_args())
 
 def main():
-    args = getArguments()
+    DIRPATH, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
+    cnt = 0
+    outname = outbasename + ".csv"
 
-    DIRPATH = args["data"]
-    logname = args["logfile"]
-    outbasename = args["output"]
-    bSplit = args["split"]
-    maxFiles = args["maxinput"]
-    doneFolder = args["done"] + "/"
-    FILEEXT = getFileExtList(args["excel"], args["pdf"])
+    with open(logname, "w", encoding='utf-8', buffering=1) as logf:
 
-    with open(logname, "w", encoding='utf-8') as logf:
-        cnt = 0
-        cdone = 0
-        outname = outbasename + ".csv"
-
-        sys.stdout.reconfigure(encoding="utf-8") # type: ignore
-        print("START:", datetime.now(), "\ninput:", DIRPATH, "\nlog:", logname, "\noutput:", outname,"\nsplit:", bSplit, "\nmaxinput:", maxFiles, "\ndone:", doneFolder, "\nextensions:", FILEEXT)
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
+        print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}")
 
         for root, dirs, files in os.walk(DIRPATH):
             for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), files):
-                #cdone = cdone + 1
-                cdone += 1
-                if cdone % 10 == 0:
-                    logf.flush()
                 parts = os.path.split(root)
                 clientid = parts[1]
                 inname = root + os.sep + name  
@@ -551,7 +536,18 @@ def main():
                 except Exception as err:
                     print(datetime.now(), f":{clientid}:!!!CRITICAL ERROR!!!", err)
                     logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
-                sys.stdout.flush()
+
+def getParameters():
+    args = getArguments()
+
+    DIRPATH = args["data"]
+    logname = args["logfile"]
+    outbasename = args["output"]
+    bSplit = args["split"]
+    maxFiles = args["maxinput"]
+    doneFolder = args["done"] + "/"
+    FILEEXT = getFileExtList(args["excel"], args["pdf"])
+    return DIRPATH,logname,outbasename,bSplit,maxFiles,doneFolder,FILEEXT
 
 if __name__ == "__main__":
     main()
