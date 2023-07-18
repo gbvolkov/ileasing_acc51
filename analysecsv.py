@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 import csv
 from dask import dataframe as dd
-from dask.delayed import delayed
 from argparse import (
     ArgumentParser,
     ArgumentDefaultsHelpFormatter,
