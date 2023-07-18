@@ -405,8 +405,6 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
         berror = True
     return (df, npages, berror)
 
-
-# TODO Rename this here and in `processPDF`
 def prepareDataFromPDF(headers, inname, clientid):
     companyName = headers[0]
     periods = getPeriod(headers[1])
