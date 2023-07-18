@@ -489,4 +489,5 @@ def main():
                     logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
                 sys.stdout.flush()
 
-main()
+if __name__ == "__main__":
+    main()
