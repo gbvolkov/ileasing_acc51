@@ -138,4 +138,5 @@ def main():
         transform_csv(transcvname, inname, csv_file_delimeter)
     print("FINISHED")
 
-main()
+if __name__ == "__main__":
+    main()
