@@ -208,40 +208,7 @@ COLUMNS = ["Date", "Document"
                     , "Credit_Account", "Credit_Amount"
                     , "Balance_D", "Balance"]
 
-def publishgDataFrame(df, xlsname, clientid, searchstr, definition, initialBalance, controlDebet, controlCredit, controlBalance) -> pd.DataFrame:
-    
-    if not df.empty :
-        df = df.iloc[:,0:10]
-        df.columns = COLUMNS
-    else :
-        df = pd.DataFrame(columns = COLUMNS)
-
-    df['Debet_Amount'].fillna(0.0, inplace=True)
-    df['Credit_Amount'].fillna(0.0, inplace=True)
-    df['Balance'].fillna(0.0, inplace=True)
-
-    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(' ', '')
-    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(',', '.')
-    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(' ', '')
-    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(',', '.')
-    df['Balance'] = df['Balance'].astype(str).str.replace(' ', '')
-    df['Balance'] = df['Balance'].astype(str).str.replace(',', '.')
-
-    #Добавляем столбцы из заголовка
-    df['Company_Name'] = definition['Company_Name']
-    df['Start'] = definition['Start']
-    df['Finish'] = definition['Finish']
-    df['OpenD'] = 'Д' #definition['OpenD']
-    df['OpenBalance'] = initialBalance #definition['OpenBalance'].round(2)
-    df['file'] = xlsname
-    df['processdate'] = datetime.now()
-
-    #Убираем строки с промежуточным результатом (типа Сальдо на сентябрь etc)
-    df['Date'] = df['Date'].fillna("NODATE")
-    df['Date'] = df['Date'].apply(lambda x: f"{x.strftime('%d.%m.%Y')}" if isinstance(x,datetime) else f"{x}")
-    df = df[df.Date.astype(str).str.match(DATE_REGEX).fillna(False)]
-
-    #Проверяем коррекность данных: сверка оборотов и остатков по счёту
+def getControlledValues(df, inname) -> tuple[float, float, float, float, float]:
     closeBalance = 0.0
     openBalance = 0.0
     totalDebet = 0.0
@@ -260,24 +227,70 @@ def publishgDataFrame(df, xlsname, clientid, searchstr, definition, initialBalan
             closeBalance = df.iloc[[-1][0]]['Balance'].round(2)
         balanceCheck = round(openBalance + totalDebet - totalCredit, 2)
     except Exception:
-        print(datetime.now(), ":", xlsname, ':ERROR.:', 'Checksum cannot be calculated!')
+        print(datetime.now(), ":", inname, ':ERROR.:', 'Checksum cannot be calculated!')
+    return(closeBalance, openBalance, totalDebet, totalCredit, balanceCheck)
 
+def checkControlledValues(closeBalance, openBalance, balanceCheck, totalDebet, totalCredit,
+                                controlBalance, controlDebet, controlCredit, inname) -> int:
     status = 0
     if totalDebet != controlDebet:
-        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'DEBIT:', totalDebet, "!=", controlDebet)
+        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'DEBIT:', totalDebet, "!=", controlDebet)
         status += 1
     if totalCredit != controlCredit:
-        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'CREDIT:', totalCredit, "!=", controlCredit)
+        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'CREDIT:', totalCredit, "!=", controlCredit)
         status += 2
     if closeBalance != controlBalance:
-        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'CLOSE BALANCE:', closeBalance, "!=", controlBalance)
+        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'CLOSE BALANCE:', closeBalance, "!=", controlBalance)
         status += 4
     if balanceCheck != controlBalance:
-        print(datetime.now(), ":", xlsname, ':WARNING. CONTROL CHECK FAILED:', 'BALANCE CHECK', balanceCheck, "!=", controlBalance)
+        print(datetime.now(), ":", inname, ':WARNING. CONTROL CHECK FAILED:', 'BALANCE CHECK', balanceCheck, "!=", controlBalance)
         status += 8
     if totalDebet == 0.0 and totalCredit == 0.0:
-        print(datetime.now(), ":", xlsname, ':WARNING. Zero turnovers')
+        print(datetime.now(), ":", inname, ':WARNING. Zero turnovers')
         status += 16
+    return status
+
+def normalizeNumericData(df): 
+    df['Debet_Amount'].fillna(0.0, inplace=True)
+    df['Credit_Amount'].fillna(0.0, inplace=True)
+    df['Balance'].fillna(0.0, inplace=True)
+
+    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(' ', '')
+    df['Debet_Amount'] = df['Debet_Amount'].astype(str).str.replace(',', '.')
+    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(' ', '')
+    df['Credit_Amount'] = df['Credit_Amount'].astype(str).str.replace(',', '.')
+    df['Balance'] = df['Balance'].astype(str).str.replace(' ', '')
+    df['Balance'] = df['Balance'].astype(str).str.replace(',', '.')
+
+def publishgDataFrame(df, xlsname, clientid, searchstr, definition, initialBalance, controlDebet, controlCredit, controlBalance) -> pd.DataFrame:
+    
+    if not df.empty :
+        df = df.iloc[:,0:10]
+        df.columns = COLUMNS
+    else :
+        df = pd.DataFrame(columns = COLUMNS)
+
+    normalizeNumericData(df)
+
+    #Добавляем столбцы из заголовка
+    df['Company_Name'] = definition['Company_Name']
+    df['Start'] = definition['Start']
+    df['Finish'] = definition['Finish']
+    df['OpenD'] = 'Д' #definition['OpenD']
+    df['OpenBalance'] = initialBalance #definition['OpenBalance'].round(2)
+    df['file'] = xlsname
+    df['processdate'] = datetime.now()
+
+    #Убираем строки с промежуточным результатом (типа Сальдо на сентябрь etc)
+    df['Date'] = df['Date'].fillna("NODATE")
+    df['Date'] = df['Date'].apply(lambda x: f"{x.strftime('%d.%m.%Y')}" if isinstance(x,datetime) else f"{x}")
+    df = df[df.Date.astype(str).str.match(DATE_REGEX).fillna(False)]
+
+    #Проверяем коррекность данных: сверка оборотов и остатков по счёту
+    (closeBalance, openBalance, totalDebet, totalCredit, balanceCheck) = getControlledValues(df, xlsname)
+
+    status = checkControlledValues(closeBalance, openBalance, balanceCheck, totalDebet, totalCredit,
+                                controlBalance, controlDebet, controlCredit, xlsname)
 
     df.insert(df.shape[1], 'CLIENTID', clientid)
     df.insert(df.shape[1], 'SUBSET', searchstr)
@@ -310,8 +323,18 @@ def getDataFrameFromExcel(df, clientid, xlsname) -> pd.DataFrame:
     df = publishgDataFrame(df, xlsname, clientid, searchstr, definition, openbalance, controlDebet, controlCredit, controlBalance)
     return df
 
-def getHeadLines(pdfname: str, nlines: int = 3) -> list:
-    result = []
+def get_headlines_pdf(pdfname: str, nlines: int = 3) -> list[str]:
+    """
+    Extracts the headlines from a PDF file using pdfminer library.
+
+    :param pdfname: Name of the PDF file.
+    :type pdfname: str
+    :param nlines: Number of headlines to extract. Default is 3.
+    :type nlines: int
+    :return: List of extracted headlines.
+    :rtype: list[str]
+    """
+    result: list[str] = []
     for page_layout in extract_pages(pdfname, maxpages=1) :
         for element in page_layout :
             if isinstance(element, LTTextBoxHorizontal) :
@@ -320,19 +343,65 @@ def getHeadLines(pdfname: str, nlines: int = 3) -> list:
                 for line in lines :
                     if len(line) > 0 :
                         result.append(line)
-                        if len(result) >= nlines :
-                            return result
     return result
+
+def get_headlines_pdf2(pdfname: str, nlines: int = 3) -> list[str]:
+    """
+    Extracts the headlines from a PDF file using PyPDF2 library.
+
+    :param pdfname: Name of the PDF file.
+    :type pdfname: str
+    :param nlines: Number of headlines to extract. Default is 3.
+    :type nlines: int
+    :return: List of extracted headlines.
+    :rtype: list[str]
+    """
+    result: list[str] = []
+    with open(pdfname,'rb') as f:
+        pdf_reader = PyPDF2.PdfFileReader(f)
+        txt = pdf_reader.pages[0].extract_text()
+        lines = [x.strip() for x in txt.split("\n")]
+        result.extend([line for line in lines if len(line) > 0])
+    return result
+
 
 def pdfPagesCount(pdfname)->int:
     with open(pdfname,'rb') as f:
         pdfReader = PyPDF2.PdfFileReader(f)
         return pdfReader.getNumPages()
 
+def getDataFrameFromPDF(inname) -> pd.DataFrame:
+    df = pd.DataFrame()
+    npages = pdfPagesCount(inname)
+    spage = 1
+    cchunk = 100
+    if npages >= 500 :
+        print(datetime.now(), ":", inname, ':WARINING: huge pdf:', npages, " pages")
+        sys.stdout.flush()
+    while spage <= npages :
+        lpage = min(spage + cchunk - 1, npages)
+        tables = camelot.read_pdf(inname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
+        for tbl in tables :
+            df = pd.concat([df, tbl.df])
+        if npages >= 500 :
+            print(datetime.now(), ":", inname, f':PROCESSED: {spage}-{lpage} of ', npages, " pages")
+            sys.stdout.flush()
+        spage = lpage + 1
+    return df.reset_index(drop=True)
+
+def normalizeDColumntForPDF(df) -> pd.DataFrame:
+    df['Contains_D'] = list(map(lambda x: str(x).startswith('Д\n'), df[8].astype(str)))
+    if df['Contains_D'].any() :
+        df[[8,9]] = df[8].str.split("\n", n = 1, expand = True)
+    else :
+        df[9] = df[8]
+        df[8] = ''
+    return df.drop(axis=1, columns=['Contains_D'])
+
 def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
     df = pd.DataFrame()
-    headers = getHeadLines(inname, 4)
+    headers = get_headlines_pdf2(inname, 4)
     npages = 0
     
     if len(headers)>=2 and headers[1].startswith("Карточка счета 51") :
@@ -340,31 +409,8 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
         periods = getPeriod(headers[1])
         
         definition = {'Company_Name':companyName, 'Start':periods[0], 'Finish':periods[1], 'columns': [], 'cols2del': []}
-
-        npages = pdfPagesCount(inname)
-        spage = 1
-        cchunk = 100
-        if npages >= 500 :
-            print(datetime.now(), ":", inname, ':WARINING: huge pdf:', npages, " pages")
-            sys.stdout.flush()
-        while spage <= npages :
-            lpage = min(spage + cchunk - 1, npages)
-            tables = camelot.read_pdf(inname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
-            for tbl in tables :
-                df = pd.concat([df, tbl.df])
-            if npages >= 500 :
-                print(datetime.now(), ":", inname, f':PROCESSED: {spage}-{lpage} of ', npages, " pages")
-                sys.stdout.flush()
-            spage = lpage + 1
-        
-        df = df.reset_index(drop=True)
-        df['Contains_D'] = list(map(lambda x: str(x).startswith('Д\n'), df[8].astype(str)))
-        if df['Contains_D'].any() :
-            df[[8,9]] = df[8].str.split("\n", n = 1, expand = True)
-        else :
-            df[9] = df[8]
-            df[8] = ''
-        df = df.drop(axis=1, columns=['Contains_D'])
+        df = getDataFrameFromPDF(inname)
+        df = normalizeDColumntForPDF(df)
 
         df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
         df = publishgDataFrame(df, inname, clientid, "", definition, openbalance, controlDebet, controlCredit, controlBalance)
@@ -449,7 +495,7 @@ def getArguments():
 def main():
     args = getArguments()
 
-    DIRPATH = args["data"] # + "/*/xls*"
+    DIRPATH = args["data"]
     logname = args["logfile"]
     outbasename = args["output"]
     bSplit = args["split"]
