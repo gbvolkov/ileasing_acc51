@@ -7,7 +7,6 @@ from const import COLUMNS
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def HDR8_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
-
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["Дата докум."]
@@ -32,14 +31,15 @@ def HDR8_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame,
 
     if footer.axes[0].size > 2 :
         turnovers = footer.iloc[2]
-        if turnovers.size > 1:
-        	df["totalDebet"] = turnovers.iloc[1]
-		if turnovers.size > 2:
+        if turnovers.size > 1: 
+            df["totalDebet"] = turnovers.iloc[1]
+       
+        if turnovers.size > 2:
             df["totalCredit"] = turnovers.iloc[2]
-        if turnovers.size > 3:
-        	df["closingBalance"] = turnovers.iloc[3]
-
+        if turnovers.size > 3: 
+            df["closingBalance"] = turnovers.iloc[3]
+    
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"
-
+    
     return df
