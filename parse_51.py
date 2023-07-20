@@ -487,6 +487,34 @@ def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
     print(f"{datetime.now()}:DONE: {clientid}: {filename}")
     return not berror
 
+def main():
+    DIRPATH, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
+    cnt = 0
+    outname = outbasename + ".csv"
+
+    with open(logname, "w", encoding='utf-8', buffering=1) as logf:
+
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
+        print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}")
+
+        for root, dirs, files in os.walk(DIRPATH):
+            for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), files):
+                parts = os.path.split(root)
+                clientid = parts[1]
+                inname = os.path.join(root, name)
+                try:
+                    pages = 0
+                    if bSplit and cnt % maxFiles == 0:
+                        outname = outbasename + str(cnt) + ".csv"
+                    try :
+                        cnt += runParsing(clientid, outname, inname, doneFolder, logf)
+                    except Exception as err:
+                        logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
+                        print(f"{datetime.now()}:{inname}:ERROR:{err}")
+                except Exception as err:
+                    print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
+                    logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
+
 def getFileExtList(isExcel, isPDF) -> list[str]:
     FILEEXT = []
     if isExcel:
@@ -506,34 +534,6 @@ def getArguments():
     parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
     parser.add_argument("--excel", default=True, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
     return vars(parser.parse_args())
-
-def main():
-    DIRPATH, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
-    cnt = 0
-    outname = outbasename + ".csv"
-
-    with open(logname, "w", encoding='utf-8', buffering=1) as logf:
-
-        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
-        print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}")
-
-        for root, dirs, files in os.walk(DIRPATH):
-            for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), files):
-                parts = os.path.split(root)
-                clientid = parts[1]
-                inname = root + os.sep + name  
-                try:
-                    pages = 0
-                    if bSplit and cnt % maxFiles == 0:
-                        outname = outbasename + str(cnt) + ".csv"
-                    try :
-                        cnt += runParsing(clientid, outname, inname, doneFolder, logf)
-                    except Exception as err:
-                        logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
-                        print(f"{datetime.now()}:{inname}:ERROR:{err}")
-                except Exception as err:
-                    print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
-                    logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
 
 def getParameters():
     args = getArguments()

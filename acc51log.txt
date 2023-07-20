@@ -1,20 +1,6 @@
-PROCESSED:Data:05,20 сбер.xls.xls:ALL:2:./parsed0.csv
-PROCESSED:Data:05.20 пром.xls.xls:ALL:4:./parsed0.csv
-PROCESSED:Data:06,20 пром.xls.xls:ALL:5:./parsed0.csv
-PROCESSED:Data:06,20 райф.xls.xls:ALL:18:./parsed0.csv
-PROCESSED:Data:Data_Data_Data_Карточка счета 51 за Апрель 2020 г. ООО ПКФ  ОМЕГА.pdf.pdf:ALL:195:./parsed0.csv
-PROCESSED:Data:ºá îáαΓ 2020.xlsx:ALL:68:./parsed0.csv
-PROCESSED:Data:ºá öÑóαá½∞ 2020.xlsx:ALL:49:./parsed0.csv
-PROCESSED:Data:август 20.xls.xls:ALL:541:./parsed0.csv
-PROCESSED:Data:апрель 20.xls.xls:ALL:702:./parsed0.csv
-PROCESSED:Data:Вертикаль 51 Карточка 2019-09 по 2020-10.xlsx.xlsx:ALL:1533:./parsed0.csv
-PROCESSED:Data:декабрь 19.xls.xls:ALL:738:./parsed0.csv
-PROCESSED:Data:Карточка 51 август 2020.xls:ALL:78:./parsed0.csv
-PROCESSED:Data:Карточка 51 АЛЬФА  октябрь 2020.xls:ALL:48:./parsed0.csv
-PROCESSED:Data:Карточка 51 апрель 2020.xls:ALL:5:./parsed0.csv
-PROCESSED:Data:Карточка 51 декабрь 2019.xls:ALL:53:./parsed0.csv
-PROCESSED:Data:Карточка 51 июль 2020.xls:ALL:66:./parsed0.csv
-FILE_ERROR:Data:карточка 51 сч_октябрь_ПРЕДВАРИТЕЛЬНАЯ.xlsx.xlsx::0:KeyError "There is no item named 'xl/sharedStrings.xml' in the archive"
-ERROR:Data:Карточка 51 счета - ООО “АСТАР” от 17.11.2020.xlsx:Лист1:0:Exception Incorrect header structure
-FILE_ERROR:Data:Карточка 51 счета - ООО “ДАР Инвест” от 17.11.2020.xlsx::0:KeyError "There is no item named 'xl/sharedStrings.xml' in the archive"
-ERROR:Data:Карточка 51 счета - ООО “КЛС” от 20.11.2020.xls:Sheet1:0:Exception Incorrect header structure
+2023-07-20 11:58:30.636490:EMPTY: Data:(1)Выписка по счету ...165370 за 01.06.2022 - 31.08.2022. ТП ИНТЕГРАЛ.xlsx:1:0:./parsed0.csv
+2023-07-20 11:58:31.086268:EMPTY: Data:(1)Выписка_40702810029140005588_05.06.2022–06.06.2023.xlsx:1:0:./parsed0.csv
+2023-07-20 11:58:31.168235:EMPTY: Data:(1)СберБизнес. Выписка за 2023.03.01-2023.03.31 счёт 40702810262000045703.xlsx:1:0:./parsed0.csv
+2023-07-20 11:58:31.317767:EMPTY: Data:[1]01.12.2022-10.12.2022.xlsx:1:0:./parsed0.csv
+2023-07-20 11:58:31.460752:EMPTY: Data:[1]11.12.2022-20.11.2022.xlsx:1:0:./parsed0.csv
+2023-07-20 11:58:31.978305:EMPTY: Data:[1]BankStatement_34999_2023-02-16_10-47-09-743.xlsx:1:0:./parsed0.csv
