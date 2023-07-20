@@ -33,7 +33,6 @@ def HDR8_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame,
         turnovers = footer.iloc[2]
         if turnovers.size > 1: 
             df["totalDebet"] = turnovers.iloc[1]
-       
         if turnovers.size > 2:
             df["totalCredit"] = turnovers.iloc[2]
         if turnovers.size > 3: 
