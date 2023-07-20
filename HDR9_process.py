@@ -28,7 +28,7 @@ def HDR9_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame,
     obalance = header[header.iloc[:,0].str.startswith('ВХОДЯЩИЙ ОСТАТОК')].dropna(axis=1,how='all')
     if obalance.size > 1:
         df["openBalance"] = obalance.iloc[:,1].values[0]
-    cbalance = footer[header.iloc[:,0] == 'ИСХОДЯЩИЙ ОСТАТОК'].dropna(axis=1,how='all')
+    cbalance = footer[footer.iloc[:,0] == 'ИСХОДЯЩИЙ ОСТАТОК'].dropna(axis=1,how='all')
     if cbalance.size > 1:
         df["closingBalance"] = cbalance.iloc[:,1].values[0]
 
