@@ -29,6 +29,12 @@ from HDR6_process import HDR6_process
 from HDR7_process import HDR7_process
 from HDR8_process import HDR8_process
 from HDR9_process import HDR9_process
+from HDR10_process import HDR10_process
+from HDR11_process import HDR11_process
+from HDR12_process import HDR12_process
+from HDR13_process import HDR13_process
+from HDR14_process import HDR14_process
+from HDR15_process import HDR15_process
 
 
 def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
@@ -49,9 +55,9 @@ def TestHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFra
     datafname = os.path.join(nameparts[0], f"{fname}_{sheet}_data.csv") # type: ignore
     footerfname = os.path.join(nameparts[0], f"{fname}_{sheet}_footer.csv") # type: ignore
 
-    header.to_csv(headerfname, mode="a+", header=not Path(headerfname).is_file(), index=False)
-    data.to_csv(datafname, mode="a+", header=not Path(datafname).is_file(), index=False)
-    footer.to_csv(footerfname, mode="a+", header=not Path(footerfname).is_file(), index=False)
+    header.to_csv(headerfname, mode="w", header=not Path(headerfname).is_file(), index=False)
+    data.to_csv(datafname, mode="w", header=not Path(datafname).is_file(), index=False)
+    footer.to_csv(footerfname, mode="w", header=not Path(footerfname).is_file(), index=False)
 
     return pd.DataFrame()
 
@@ -59,21 +65,33 @@ def TestHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFra
 HDRSIGNATURES = [{"Дата документа|Дата операции|№|БИК|Счет|Контрагент|ИНН контрагента|БИК банка контрагента|Корр.счет банка контрагента|Наименование банка контрагента|Счет контрагента|Списание|Зачисление|Назначение платежа|Код": HDR1_process},
                  {"Дата|Вид (шифр) операции (ВО)|Номер документа Банка|Номер документа|БИК банка корреспондента|Корреспондирующий счет|Сумма по дебету|Сумма по кредиту": HDR2_process},
                  {"Дата операции|Номер документа|Дебет|Кредит|Контрагент.Наименование |Контрагент.ИНН |Контрагент.КПП |Контрагент.Счет |Контрагент.БИК |Контрагент.Наименование банка |Назначение платежа|Тип документа": HDR3_process},
+                 {"Дата операции|Номер документа|Дебет|Кредит|Контрагент.Наименование |Контрагент.ИНН |Контрагент.КПП |Контрагент.Счет |Контрагент.БИК |Контрагент.Наименование банка |Назначение платежа|Код дебитора|Тип документа": HDR3_process},
                  {"№ док|Дата документа|Дата операции|Реквизиты корреспондента.Наименование|Реквизиты корреспондента.Счет|Реквизиты корреспондента.ИНН Контрагента|Реквизиты корреспондента.Банк|Дебет Сумма/Сумма в НП|Кредит Сумма/Сумма в НП|Курс ЦБ на дату операции|Основание операции (назначение платежа)": HDR4_process},
                  {"Дата|Номер документа|Дебет|Кредит|Контрагент.Наименование|Контрагент.ИНН|Контрагент.КПП|Контрагент.БИК|Контрагент.Наименование банка|Назначение платежа|Тип документа": HDR5_process},
+                 {"Дата|Номер документа|Дебет|Кредит|Контрагент.Наименование|Контрагент.ИНН|Контрагент.КПП|Контрагент.БИК|Контрагент.Наименование банка|Назначение платежа|Код дебитора|Тип документа": HDR5_process},
+                 {"Дата|Номер документа|Дебет|Кредит|Контрагент.Наименование|Контрагент.ИНН|Контрагент.КПП|Контрагент.Счет|Контрагент.БИК|Контрагент.Наименование банка|Назначение платежа|Код дебитора|Тип документа": HDR5_process},
+                 {"Дата|Номер документа|Дебет|Кредит|Контрагент.Наименование|Контрагент.ИНН|Контрагент.КПП|Контрагент.Счёт|Контрагент.БИК|Контрагент.Наименование банка|Назначение платежа|Код дебитора|Тип документа": HDR5_process},                 
                  {"Номер документа|Дата документа|Дата операции|Счёт|Контрагент|ИНН контрагента|БИК банка контрагента|Корр.счёт банка контрагента|Наименование банка контрагента|Счёт контрагента|Списание|Зачисление|Назначение платежа": HDR6_process},
                  {"Template Code|repStatementsRurExcel.xls": IgnoreHDR_process},
                  {"Номер|Контрагент|Реквизиты контрагента|Назначение платежа|Дебет|Кредит": IgnoreHDR_process},
                  {"Дата проводки|Счет.Дебет|Счет.Кредит|Сумма по дебету|Сумма по кредиту|№ документа|ВО|Банк (БИК и наименование)|Назначение платежа": HDR7_process},
                  {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Код|Назначение платежа|Очер. платежа|Бюджетный платеж.Статус сост.|Бюджетный платеж.КБК|Бюджетный платеж.ОКТМО|Бюджетный платеж.Основание|Бюджетный платеж.Налог. период|Бюджетный платеж.Номер док.|ID опер.": HDR8_process},
                  {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Назначение платежа|Очер. платежа|ID опер.": HDR8_process},
-                 {"Дата операции|№ док.|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Лицевой счет|Дебет|Кредит|Назначение": HDR9_process}]
+                 {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Рез. Поле|Код|Код выплат|Назначение платежа|Очер. платежа|Вид условия оплаты|Основание для списания|Бюджетный платеж.Статус сост.|Бюджетный платеж.КБК|Бюджетный платеж.ОКТМО|Бюджетный платеж.Основание|Бюджетный платеж.Налог. период|Бюджетный платеж.Номер док.|Бюджетный платеж.Дата док.|ID опер.": HDR8_process},
+                 {"Дата операции|№ док.|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Лицевой счет|Дебет|Кредит|Назначение": HDR9_process},
+                 {"Дата|Вид опер.|№ док.|БИК|Банк контрагента|Контрагент|ИНН контрагента|Счёт контрагента|Дебет (RUB)|Кредит (RUB)|Операция": HDR10_process},
+                 {"Дата|Номер|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Счет контрагента|Дебет, RUR|Кредит, RUR|Назначение": HDR11_process},
+                 {"Дата|РО|Док.|КБ|Внеш.счет|Счет|Дебет|Кредит|Назначение|Контрагент|Контр. ИНН": HDR12_process},
+                 {"Документ|Дата операции|Корреспондент.Наименование|Корреспондент.ИНН|Корреспондент.КПП|Корреспондент.Счет|Корреспондент.БИК|Вх.остаток|Оборот Дт|Оборот Кт|Назначение платежа": HDR13_process},
+                 {"Тип|Дата|Номер|Вид операции|Сумма|Валюта|Основание платежа|БИК Банка получателя|Счет Получателя|Наименование Получателя": HDR14_process},
+                 {"№ П/П|Дата операции / Posting date|Дата валютир. / Value|Вид опер. / Op. type|Номер документа / Document number|Реквизиты корреспондента /Counter party details.Наименование / Name|Реквизиты корреспондента /Counter party details.Счет / Account|Реквизиты корреспондента /Counter party details.Банк / Bank|Дебет / Debit|Кредит / Credit|Основание операции (назначение платежа) / Payment details": HDR15_process}]
 
 def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     firstrow = 0
     lastrow = len(df.index)
     ncols = len(df.columns)
 
+    #Удаляем из хвоста все столбцы, где больше 90% значений NaN
     partialColumns = (df.isnull().sum() > lastrow * 0.9)
     for idx in range(len(partialColumns.index)-1, 0, -1):
         if not partialColumns.iloc[idx]:
@@ -91,10 +109,25 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
         if cnavalues*100/ncols < 53 and not all(df.iloc[idx][ncols-3:].isnull()):
             lastrow = idx
             break
+
+
     header = df.iloc[:firstrow].dropna(axis=1,how='all').dropna(axis=0,how='all')
-    data = df.iloc[firstrow : lastrow + 1].dropna(axis=1,how='all')
     footer = df.iloc[lastrow + 1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all')
 
+
+    df = df.iloc[firstrow : lastrow + 1]
+    #Удаляем из головы все столбцы, где больше 40% значений NaN
+    lastrow = len(df.index)
+    scol = 0
+    partialColumns = (df.isnull().sum() > lastrow * 0.7)
+    for idx in range(len(partialColumns.index)-1):
+        if not partialColumns.iloc[idx]:
+            break
+        scol+=1
+    df = df.iloc[:,scol:]
+
+    #data = df.iloc[firstrow : lastrow + 1].dropna(axis=1,how='all').dropna(axis=0,how='all')
+    data = df.dropna(axis=1,how='all').dropna(axis=0,how='all')
     return (
 		header,
 		data,
@@ -116,10 +149,10 @@ def setDataColumns(df) -> pd.DataFrame:
         header = header1
     #header = header.drop_duplicates()
     df = df[datastart:]
-    df.columns = header.str.replace('\n', ' ')
+    df.columns = header.str.replace('\n', ' ').fillna("column")
     ncols = len(df.columns)
     return df[df[list(df.columns)].isnull().sum(axis=1) < ncols * 0.8].dropna(
-        axis=1, how='all'
+        axis=0, how='all'
     )
 
 DATATYPES = []
@@ -128,6 +161,7 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
     berror = False
     df = pd.DataFrame()
     data = pd.DataFrame()
+    result = pd.DataFrame()
     nameparts = os.path.split(inname)
     fname = os.path.splitext(nameparts[1])[0]
 
@@ -145,13 +179,14 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
             funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
             func = funcs[0] if funcs else NoneHDR_process
             data = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
+            result = pd.concat([result, data])
 
         except Exception as err:
             berror = True   
             print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
             logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
             logf.write(logstr)
-    return (data, len(sheets), berror)
+    return (result, len(sheets), berror)
 
 def processOther(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     return (pd.DataFrame(), 0, True)
