@@ -155,7 +155,7 @@ def setDataColumns(df) -> pd.DataFrame:
         axis=0, how='all'
     )
 
-DATATYPES = []
+DATATYPES: list[str] = []
 
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
@@ -222,7 +222,7 @@ def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
 def getFilesList(log: str) -> list[str]:
     df = pd.read_csv(log, on_bad_lines='skip', names=['status', 'clientid', 'filename', 'sheets', 'doctype', 'filetype', 'error'], delimiter='|')
     filelist = df['filename'][(df['status']=='PROCESSED') & (df['doctype'] == 'выписка')]
-    return filelist.to_list()
+    return pd.Series(filelist).to_list()
 
 def main():
     preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
