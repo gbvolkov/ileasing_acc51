@@ -1,1 +1,1 @@
-python.exe parse_51.py --data=../Test4/Data --done=../Test4/Done --logfile=../Test4/parser_log_excel.txt --output=../Test4/acc51parsed_excel --no-split --maxinput=500 --no-pdf > ../Test4/log_excel.txt 2> ../Test4/err_excel.txt
+python.exe parse_51.py --data=../Data4Bank.20220604/Data --done=../Data4Bank.20220604/Done --logfile=../Data4Bank.20220604/parser_log_excel.txt --output=../Data4Bank.20220604/acc51parsed_excel --no-split --maxinput=500 --no-pdf > ../Data4Bank.20220604/log_excel.txt 2> ../Data4Bank.20220604/err_excel.txt

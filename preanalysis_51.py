@@ -1,70 +1,44 @@
 from enum import Enum
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
 import sys
 import PyPDF2
+
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextBoxHorizontal, LTTextLineHorizontal
 
-def get_headlines_pdf(pdfname: str, nlines: int = 3) -> list[str]:
-    """
-    Extracts the headlines from a PDF file using pdfminer library.
-
-    :param pdfname: Name of the PDF file.
-    :type pdfname: str
-    :param nlines: Number of headlines to extract. Default is 3.
-    :type nlines: int
-    :return: List of extracted headlines.
-    :rtype: list[str]
-    """
-    result: list[str] = []
-    for page_layout in extract_pages(pdfname, maxpages=1):
-        for element in page_layout:
-            if isinstance(element, LTTextBoxHorizontal):
+def getHeadLinesPDF(pdfname: str, nlines: int = 3) :
+    result = []
+    for page_layout in extract_pages(pdfname, maxpages=1) :
+        for element in page_layout :
+            if isinstance(element, LTTextBoxHorizontal) :
                 txt = element.get_text()
                 lines = [x.strip() for x in txt.split("\n")]
-                result.extend(line for line in lines if len(line) > 0)
+                for line in lines :
+                    if len(line) > 0 :
+                        result.append(line)
+                        if len(result) >= nlines :
+                            return result
     return result
 
-def get_headlines_pdf2(pdfname: str, nlines: int = 3) -> list[str]:
-    """
-    Extracts the headlines from a PDF file using PyPDF2 library.
-
-    :param pdfname: Name of the PDF file.
-    :type pdfname: str
-    :param nlines: Number of headlines to extract. Default is 3.
-    :type nlines: int
-    :return: List of extracted headlines.
-    :rtype: list[str]
-    """
+def getHeadLinesPDF2(pdfname: str, nlines: int = 3):
     result: list[str] = []
     with open(pdfname,'rb') as f:
-        pdf_reader = PyPDF2.PdfFileReader(f)
-        txt = pdf_reader.pages[0].extract_text()
+        pdfReader = PyPDF2.PdfFileReader(f)
+        txt = pdfReader.pages[0].extract_text()
         lines = [x.strip() for x in txt.split("\n")]
-        result.extend([line for line in lines if len(line) > 0])
+        result.extend(line for line in lines if len(line) > 0)
     return result
 
 DOCTYPES = ["выписка", "оборотно-сальдовая ведомость", "обороты счета", "обороты счёта", "анализ счета", "анализ счёта", "карточка счёта 51", "карточка счета 51"]
-def process_pdf(pdfname, clientid, logf):
-    """
-    Processes a PDF file and determines its type.
-
-    :param pdfname: Name of the PDF file.
-    :type pdfname: str
-    :param clientid: Client ID.
-    :type clientid: str
-    :param logf: Log file.
-    :type logf: file
-    :return: Tuple containing the determined type and a flag indicating if there was an error.
-    :rtype: tuple[str, bool]
-    """
+def processPDF(pdfname, clientid, logf):
     kinds = []
     berror = False
     try:
-        headers = get_headlines_pdf2(pdfname, 30)
+        headers = getHeadLinesPDF2(pdfname, 30)
         if suitable := [
             kind
             for kind in DOCTYPES
@@ -72,25 +46,18 @@ def process_pdf(pdfname, clientid, logf):
         ]:
             kinds.append(suitable[0])
         print(pdfname, "::KIND:", kinds)
+
+            #for header in filter(lambda row: any([kind for kind in DOCTYPES if kind in row.lower()]), headers) :
+            #    print(pdfname, ":", header)
     except Exception as err :
         berror = True   
         print(pdfname, '_', 'ND', ':ERROR:', err)
         fileext = Path(pdfname).suffix
-        logstr = f"ERROR:{clientid}:{os.path.basename(pdfname)}:ND:UNDEFINED:{fileext}:{ type(err).__name__} {str(err)}\n"
+        logstr = "ERROR|" + clientid + "|" + os.path.basename(pdfname) + "|ND|UNDEFINED|" + fileext + "|" + type(err).__name__ + " " + str(err) + "\n"
         logf.write(logstr)
     return (kinds[0], berror) if kinds else ("UNDEFINED", berror)
 
-def get_headlines_excel(data, nlines: int = 3):
-    """
-    Extracts the headlines from an Excel file.
-
-    :param data: Excel data.
-    :type data: pd.DataFrame
-    :param nlines: Number of headlines to extract. Default is 3.
-    :type nlines: int
-    :return: List of extracted headlines.
-    :rtype: list[pd.Series]
-    """
+def getHeadLinesEXCEL(data, nlines: int = 3):
     idx = 0
     result = []
     while (idx < data.shape[0] and idx < nlines):
@@ -99,72 +66,52 @@ def get_headlines_excel(data, nlines: int = 3):
         idx += 1
     return result
 
-def process_excel(xlsname, clientid, logf):
-    """
-    Processes an Excel file and determines its type.
-
-    :param xlsname: Name of the Excel file.
-    :type xlsname: str
-    :param clientid: Client ID.
-    :type clientid: str
-    :param logf: Log file.
-    :type logf: file
-    :return: Tuple containing the determined type and a flag indicating if there was an error.
-    :rtype: tuple[str, bool]
-    """
+def processExcel(xlsname, clientid, logf):
     berror = False
     sheets = pd.read_excel(xlsname, header=None, sheet_name=None)
     kinds = []
     if len(sheets) > 1:
         print(xlsname, ':WARNING:', len(sheets), " sheets found")
+    #if len(sheets) > 1 :
     for sheet in sheets:
         try:
-            if headers := get_headlines_excel(sheets[sheet], 10):
-                if suitable := [
-                    kind
-                    for kind in DOCTYPES
-                    if len(
-                        [
-                            row
-                            for row in headers
-                            if any(
-                                row.astype(str)
-                                .str.contains(kind, case=False)
-                                .dropna(how='all')
-                            )
-                        ]
-                    )
-                    > 0
-                ]:
-                    kinds.append(suitable[0])
+            headers = getHeadLinesEXCEL(sheets[sheet], 10)
+            if suitable := [
+                kind
+                for kind in DOCTYPES
+                if len(
+                    [
+                        row
+                        for row in headers
+                        if any(
+                            row.astype(str)
+                            .str.contains(kind, case=False)
+                            .dropna(how='all')
+                        )
+                    ]
+                )
+                > 0
+            ]:
+                kinds.append(suitable[0])
             print(xlsname, ":", sheet, ":KIND:", kinds)
+            #break
         except Exception as err :
             berror = True   
             print(xlsname, '_', sheet, ':ERROR:', err)
             fileext = Path(xlsname).suffix
-            logstr = f"ERROR:{clientid}:{os.path.basename(xlsname)}:{sheet}:UNDEFINED:{fileext}:{ type(err).__name__} {str(err)}\n"
+            logstr = "ERROR|" + clientid + "|" + os.path.basename(xlsname) + "|" + sheet + "|UNDEFINED|" + fileext + "|" + type(err).__name__ + " " + str(err) + "\n"
             logf.write(logstr)
     return (kinds[0], berror) if kinds else ("UNDEFINED", berror)
 
-def process(inname, clientid, logf):
-    """
-    Processes a file and determines its type.
 
-    :param inname: Name of the file.
-    :type inname: str
-    :param clientid: Client ID.
-    :type clientid: str
-    :param logf: Log file.
-    :type logf: file
-    :return: Tuple containing the determined type and a flag indicating if there was an error.
-    :rtype: tuple[str, bool]
-    """
+def process(inname, clientid, logf):
     kind = ""
     berror = False
     if inname.lower().endswith('.xls') or inname.lower().endswith('.xlsx') :
-        kind, berror = process_excel(inname, clientid, logf)
+        #sheets = pd.read_excel(inname, header=None, sheet_name=None)
+        kind, berror = processExcel(inname, clientid, logf)
     elif inname.lower().endswith('.pdf') :
-        kind, berror = process_pdf(inname, clientid, logf)
+        kind, berror = processPDF(inname, clientid, logf)
     return (kind, berror)
 
 def main():
@@ -186,33 +133,39 @@ def main():
             for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), files):
                 logf.flush()
                 sys.stdout.flush()
-                inname = os.path.join(root, name)
+                inname = root + os.sep + name  
                 parts = os.path.split(root)
                 clientid = parts[1]
                 try :
                     fileext = Path(name).suffix
                     try :
                         kind, berror = process(inname, clientid, logf)
+                        #kind = ""
+                        #if name.lower().endswith('.xls') or name.lower().endswith('.xlsx') :
+                        #    #sheets = pd.read_excel(inname, header=None, sheet_name=None)
+                        #    kind, berror = processExcel(inname, clientid, logf)
+                        #elif name.lower().endswith('.pdf') :
+                        #    kind, berror = processPDF(inname, clientid, logf)
+
                         if len(kind) > 0 :
                             cnt = cnt + 1
                             try :
-                                logstr = f"PROCESSED:{clientid}:{os.path.basename(inname)}:ALL:{kind}:{fileext}:OUT\n"
+                                logstr = "PROCESSED|" + clientid + "|" + inname + "|ALL|" + kind + "|" + fileext + "|" + "OUT" + "\n"
                                 logf.write(logstr)
                             except Exception as err:
-                                logstr = f"PROCESSED:{clientid}:ND:ND:UNDEFINED:{fileext}:ERROR {err}\n"
+                                logstr = "PROCESSED|" + clientid + "|ND|ND|UNDEFINED|" + fileext + "|ERROR " + err + "\n"
                                 logf.write(logstr)
                         else : 
-                            logstr = f"FILE_ERROR:{clientid}:{os.path.basename(inname)}::UNDEFINED:{fileext}:TYPE CANNOT BE DEFINED\n"
+                            logstr = "FILE_ERROR|" + clientid + "|" + inname + "||UNDEFINED|" + fileext + "|" + "TYPE CANNOT BE DEFINED" + "\n"
                             logf.write(logstr)
                     except Exception as err :
                         print(inname, ':ERROR:', err)
-                        logstr = f"FILE_ERROR:{clientid}:{os.path.basename(inname)}::UNDEFINED:{fileext}:{type(err).__name__} {str(err)}\n"
+                        logstr = "FILE_ERROR|" + clientid + "|" + inname + "||UNDEFINED|" + fileext + "|" + type(err).__name__ + " " + str(err) + "\n"
                         logf.write(logstr)
 
                 except Exception as err :
                     print('!!!CRITICAL ERROR!!!', err)
-                    logstr = f"CRITICAL ERROR:{clientid}:ND:ND:UNDEFINED:ND:ERROR {type(err).__name__} {str(err)}\n"
+                    logstr = "CRITICAL ERROR|" + clientid + "|ND|ND|ERROR\n"
                     logf.write(logstr)
 
-if __name__ == "__main__":
-    main()
+main()

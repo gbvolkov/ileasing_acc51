@@ -1,0 +1,1 @@
+python.exe parse_51.py --data=../Final/Data --done=../Final/Done --logfile=../Final/parser_log_pdf.txt --output=../Final/acc51parsed_pdf --no-split --maxinput=500 --no-excel > ../Final/log_pdf.txt 2> ../Final/err_pdf.txt

@@ -1,0 +1,1 @@
+python.exe extracttablefromxls.py --data=./data/preanalysis51_full.csv --done=../Done --output=./data/parsed_statements --no-spilt --no-pdf --excel --logfile=./data/extract_statements_log.txt > ./data/extract_statements_log.log 2> ./data/extract_statements_log.err

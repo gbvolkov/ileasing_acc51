@@ -1,0 +1,1 @@
+python.exe parse_51.py --data=../Final3/Data --done=../Final3/Done --logfile=../Final3/parser_log.txt --output=../Final3/acc51parsed --no-split --maxinput=500 > ../Final3/log.txt 2> ../Final3/err.txt

@@ -1,0 +1,1 @@
+python.exe parse_51.py --data=../Test4Bank/Data --done=../Test4Bank/Done --logfile=../Test4Bank/parser_log.txt --output=../Test4Bank/acc51parsed --no-split --maxinput=500  > ../Test4Bank/log.txt 2> ../Test4Bank/err.txt

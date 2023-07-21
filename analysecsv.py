@@ -4,12 +4,14 @@ import os
 from datetime import datetime
 import csv
 from dask import dataframe as dd
+from dask.delayed import delayed
 from argparse import (
     ArgumentParser,
     ArgumentDefaultsHelpFormatter,
     BooleanOptionalAction,
 )
 import sys
+
 
 def transform_csv(outname, inname, csv_file_delimeter):
     with open(outname, "w+", encoding="utf-8", newline='') as fout:
@@ -136,5 +138,4 @@ def main():
         transform_csv(transcvname, inname, csv_file_delimeter)
     print("FINISHED")
 
-if __name__ == "__main__":
-    main()
+main()
