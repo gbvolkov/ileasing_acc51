@@ -260,7 +260,7 @@ def main():
 
     #with open('datatypes.csv', 'w', encoding='utf-8') as f:
     df = pd.DataFrame(np.unique(DATATYPES))
-    df.to_csv("datatypes.csv", mode="w", index = False)
+    df.to_csv("./data/datatypes.csv", mode="w", index = False)
 
 def getFileExtList(isExcel, isPDF) -> list[str]:
     FILEEXT = []
