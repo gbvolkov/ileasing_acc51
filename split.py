@@ -71,8 +71,8 @@ def main():
     Main function to split the CSV file based on CLIENTID column.
     """
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", "--input", default="./acc51parsed_full.csv", help="Input file")
-    parser.add_argument("-o", "--output", default="./DataSplit", help="Output folder. No ending delimiter")
+    parser.add_argument("-i", "--input", default="./data/acc51parsed_full.csv", help="Input file")
+    parser.add_argument("-o", "--output", default="./data/DataSplit", help="Output folder. No ending delimiter")
     args = vars(parser.parse_args())
 
     input_file = args["input"]

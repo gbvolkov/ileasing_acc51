@@ -60,7 +60,7 @@ def main():
     parser.add_argument(
         "-i", "--input", default="../DataSplit", help="Input folder"
     )
-    parser.add_argument("-o", "--output", default="./result.csv", help="Resulting file")
+    parser.add_argument("-o", "--output", default="./data/result.csv", help="Resulting file")
     parser.add_argument("-uids", "--uids", default="../RawData", help="Folders with Clients UIDS")
     parser.add_argument(
         "--transform",
@@ -69,7 +69,7 @@ def main():
         help="Weather to replace field separator (--no-transform opposite option)",
     )
     parser.add_argument(
-        "-c", "--csvout", default="./transformed.csv", help="Transformed csv file name"
+        "-c", "--csvout", default="./data/transformed.csv", help="Transformed csv file name"
     )
     parser.add_argument(
         "-d",

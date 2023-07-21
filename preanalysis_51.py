@@ -170,7 +170,7 @@ def process(inname, clientid, logf):
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-d", "--data", default="../Data", help="Data folder")
-    parser.add_argument("-l", "--logfile", default="./preanalys_test_2.txt", help="Log file")
+    parser.add_argument("-l", "--logfile", default="./data/preanalys_test_2.txt", help="Log file")
     args = vars(parser.parse_args())
 
     DIRPATH = args["data"] # + "/*/xls*"

@@ -269,10 +269,10 @@ def getFileExtList(isExcel, isPDF) -> list[str]:
 
 def getArguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-d", "--data", default="./preanalys51.txt", help="Data folder")
+    parser.add_argument("-d", "--data", default="./data/preanalys51.txt", help="Data folder")
     parser.add_argument("-r", "--done", default="../Done", help="Done folder")
-    parser.add_argument("-l", "--logfile", default="./acc51log.txt", help="Log file")
-    parser.add_argument("-o", "--output", default="./parsed", help="Resulting file name (no extension)")
+    parser.add_argument("-l", "--logfile", default="./data/acc51log.txt", help="Log file")
+    parser.add_argument("-o", "--output", default="./data/parsed", help="Resulting file name (no extension)")
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
     parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
