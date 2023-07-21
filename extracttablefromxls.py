@@ -219,33 +219,41 @@ def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
     print(f"{datetime.now()}:DONE: {clientid}: {filename}")
     return not berror
 
+def getFilesList(log: str) -> list[str]:
+    df = pd.read_csv(log, on_bad_lines='skip', names=['status', 'clientid', 'filename', 'sheets', 'doctype', 'filetype', 'error'], delimiter='|')
+    filelist = df['filename'][(df['status']=='PROCESSED') & (df['doctype'] == 'выписка')]
+    return filelist.to_list()
+
 def main():
-    DIRPATH, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
+    preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
     cnt = 0
     outname = outbasename + ".csv"
-
+    DIRPATH = '../Data'
+    fileslist = getFilesList(preanalysislog)
+    print(fileslist)
     with open(logname, "w", encoding='utf-8', buffering=1) as logf:
 
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
         print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}")
 
-        for root, dirs, files in os.walk(DIRPATH):
-            for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), files):
-                parts = os.path.split(root)
-                clientid = parts[1]
-                inname = os.path.join(root, name)
-                try:
-                    pages = 0
-                    if bSplit and cnt % maxFiles == 0:
-                        outname = outbasename + str(cnt) + ".csv"
-                    try :
-                        cnt += runParsing(clientid, outname, inname, doneFolder, logf)
-                    except Exception as err:
-                        logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
-                        print(f"{datetime.now()}:{inname}:ERROR:{err}")
+  
+        #for file in fileslist:
+        for fname in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), fileslist):
+            parts = os.path.split(os.path.dirname(fname))
+            clientid = parts[1]
+            inname = fname
+            try:
+                pages = 0
+                if bSplit and cnt % maxFiles == 0:
+                    outname = outbasename + str(cnt) + ".csv"
+                try :
+                    cnt += runParsing(clientid, outname, inname, doneFolder, logf)
                 except Exception as err:
-                    print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
-                    logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
+                    logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
+                    print(f"{datetime.now()}:{inname}:ERROR:{err}")
+            except Exception as err:
+                print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
+                logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
 
     #with open('datatypes.csv', 'w', encoding='utf-8') as f:
     df = pd.DataFrame(np.unique(DATATYPES))
@@ -261,7 +269,7 @@ def getFileExtList(isExcel, isPDF) -> list[str]:
 
 def getArguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-d", "--data", default="../Data", help="Data folder")
+    parser.add_argument("-d", "--data", default="./preanalys51.txt", help="Data folder")
     parser.add_argument("-r", "--done", default="../Done", help="Done folder")
     parser.add_argument("-l", "--logfile", default="./acc51log.txt", help="Log file")
     parser.add_argument("-o", "--output", default="./parsed", help="Resulting file name (no extension)")
@@ -274,14 +282,14 @@ def getArguments():
 def getParameters():
     args = getArguments()
 
-    DIRPATH = args["data"]
+    preanalysislog = args["data"]
     logname = args["logfile"]
     outbasename = args["output"]
     bSplit = args["split"]
     maxFiles = args["maxinput"]
     doneFolder = args["done"] + "/"
     FILEEXT = getFileExtList(args["excel"], args["pdf"])
-    return DIRPATH,logname,outbasename,bSplit,maxFiles,doneFolder,FILEEXT
+    return preanalysislog,logname,outbasename,bSplit,maxFiles,doneFolder,FILEEXT
 
 if __name__ == "__main__":
     DATATYPES = []
