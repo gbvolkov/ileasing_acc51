@@ -42,7 +42,7 @@ def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFra
     DATATYPES.append(datatype)
     print(f"Datatype: {datatype} NOT FOUND")
 
-    logstr = f"{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:""{datatype}""\n"
+    logstr = f"{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:\"{datatype}\"\n"
     logf.write(logstr)
 
     return pd.DataFrame()
@@ -228,12 +228,13 @@ def getFilesList(log: str) -> list[str]:
     return pd.Series(filelist).to_list()
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8") # type: ignore
+
     preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
     cnt = 0
     outname = outbasename + ".csv"
     DIRPATH = '../Data'
     fileslist = getFilesList(preanalysislog)
-    print(fileslist)
     with open(logname, "w", encoding='utf-8', buffering=1) as logf:
 
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
@@ -272,10 +273,10 @@ def getFileExtList(isExcel, isPDF) -> list[str]:
 
 def getArguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-d", "--data", default="./data/preanalysis51_full_old.csv", help="Data folder")
-    parser.add_argument("-r", "--done", default="../Done", help="Done folder")
-    parser.add_argument("-l", "--logfile", default="./data/acc51log.txt", help="Log file")
-    parser.add_argument("-o", "--output", default="./data/parsed_statements", help="Resulting file name (no extension)")
+    parser.add_argument("-d", "--data", default="./data/test_preanalysis.csv", help="Data folder")
+    parser.add_argument("-r", "--done", default="./data/Done", help="Done folder")
+    parser.add_argument("-l", "--logfile", default="./data/test_preanalysis_log.log.txt", help="Log file")
+    parser.add_argument("-o", "--output", default="./data/test_preanalysis_parsed_statements", help="Resulting file name (no extension)")
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
     parser.add_argument("--pdf", default=False, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
