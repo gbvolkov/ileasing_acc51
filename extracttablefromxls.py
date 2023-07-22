@@ -44,6 +44,7 @@ from BankStatement_21_process import BankStatement_21_process
 from BankStatement_22_process import BankStatement_22_process
 from BankStatement_23_process import BankStatement_23_process
 from BankStatement_24_process import BankStatement_24_process
+from BankStatement_25_process import BankStatement_25_process
 
 
 def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
@@ -114,6 +115,7 @@ HDRSIGNATURES = [{"Дата документа|Дата операции|№|Б�
                  {"Дата|№ док.|ВО|Название корр.|ИНН контрагента|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение": BankStatement_22_process},
                  {"Номер строки|Дата проводки|Вид операции|Номер документа|Счет плательщика/получателя|Реквизиты плательщика/получателя денежных средств.Наименование/ФИО|Реквизиты плательщика/получателя денежных средств.ИНН/КИО|Реквизиты плательщика/получателя денежных средств.КПП|Сумма Дебет|Сумма Кредит|Назначение платежа": BankStatement_23_process},
                  {"Дата|№|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Корреспондент.БИК|Корреспондент.Счет|Корреспондент.Наименование|В О|Содержание|Обороты.Дебет|Обороты.Кредит": BankStatement_24_process},
+                 {"Дата и время проводки|Счет корреспондента|Дебет|Кредит|Исходящий остаток|Наименование корреспондента|ИНН корреспондента|Назначение платежа": BankStatement_25_process},
                  ]
 
 """
@@ -126,7 +128,8 @@ def findHeaderRow(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     result = pd.DataFrame(columns=["_idx", "_cnas", "_header"])
     axis=0
     # Delete rows containing either 60% or more than 60% NaN Values
-    perc = 60.0 
+    perc = 50.0 
+    df = df.replace('\n', '').replace(r'\s+', '', regex=True).replace(r'\d+\.?\d*', '', regex=True).fillna("").astype(str)
     maxnotna = df.mask(df == '').notna().sum(axis=1).max()
     min_count =  int((perc*maxnotna/100) + 1)
     #df = df.dropna( axis=0, thresh=min_count)
@@ -251,7 +254,7 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
     data = pd.DataFrame()
     result = pd.DataFrame()
     nameparts = os.path.split(inname)
-    fname = os.path.splitext(nameparts[1])[0]
+    #fname = os.path.splitext(nameparts[1])[0]
 
     sheets = pd.read_excel(inname, header=None, sheet_name=None)
     if len(sheets) > 1 :
@@ -260,16 +263,17 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
         try:
             df = sheets[sheet]
             df = df.dropna(axis=1,how='all')
-            header, data, footer = getTableRange(df)
+            if not df.empty:
+                header, data, footer = getTableRange(df)
 
-            data = setDataColumns(data)
-            data = cleanupRawData(data)
-            signature = "|".join(data.columns).replace('\n', ' ')
-            funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-            func = funcs[0] if funcs else NoneHDR_process
-            outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
-            outdata = cleanupProcessedData(outdata)
-            result = pd.concat([result, outdata])
+                data = setDataColumns(data)
+                data = cleanupRawData(data)
+                signature = "|".join(data.columns).replace('\n', ' ')
+                funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+                func = funcs[0] if funcs else NoneHDR_process
+                outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
+                outdata = cleanupProcessedData(outdata)
+                result = pd.concat([result, outdata])
 
         except Exception as err:
             berror = True   
