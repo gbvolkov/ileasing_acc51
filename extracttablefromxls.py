@@ -35,6 +35,12 @@ from BankStatement_12_process import BankStatement_12_process
 from BankStatement_13_process import BankStatement_13_process
 from BankStatement_14_process import BankStatement_14_process
 from BankStatement_15_process import BankStatement_15_process
+from BankStatement_16_process import BankStatement_16_process
+from BankStatement_17_process import BankStatement_17_process
+from BankStatement_18_process import BankStatement_18_process
+from BankStatement_19_process import BankStatement_19_process
+from BankStatement_20_process import BankStatement_20_process
+from BankStatement_21_process import BankStatement_21_process
 
 
 def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
@@ -45,12 +51,14 @@ def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFra
     logstr = f"{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:\"{datatype}\"\n"
     logf.write(logstr)
 
-    return pd.DataFrame()
+    return pd.DataFrame(columns = COLUMNS)
 
 def IgnoreHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
-    return pd.DataFrame()
+    return pd.DataFrame(columns = COLUMNS)
 
 def TestHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+    NoneHDR_process(header, data, footer, inname, clientid, sheet, logf)
+    
     nameparts = os.path.split(inname)
     fname = os.path.splitext(nameparts[1])[0]
 
@@ -62,10 +70,11 @@ def TestHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFra
     data.to_csv(datafname, mode="w", header=not Path(datafname).is_file(), index=False)
     footer.to_csv(footerfname, mode="w", header=not Path(footerfname).is_file(), index=False)
 
-    return pd.DataFrame()
+    return pd.DataFrame(columns = COLUMNS)
 
 
 HDRSIGNATURES = [{"Дата документа|Дата операции|№|БИК|Счет|Контрагент|ИНН контрагента|БИК банка контрагента|Корр.счет банка контрагента|Наименование банка контрагента|Счет контрагента|Списание|Зачисление|Назначение платежа|Код": BankStatement_1_process},
+                 {"Дата документа|Дата операции|№|БИК|Счет|Контрагент|ИНН контрагента|БИК банка контрагента|Корр.счет банка контрагента|Наименование банка контрагента|Счет контрагента|Списание|Зачисление|Назначение платежа|Код|Показатель статуса (101)|Код дохода/бюджетной классификации (104)|Код ОКТМО (105)|Показатель основания платежа (106)|Показатель налогового периода/код таможенного органа (107)|Показатель номера документа (108)|Показатель даты документа (109)|Показатель типа платежа (110)": BankStatement_1_process},
                  {"Дата|Вид (шифр) операции (ВО)|Номер документа Банка|Номер документа|БИК банка корреспондента|Корреспондирующий счет|Сумма по дебету|Сумма по кредиту": BankStatement_2_process},
                  {"Дата операции|Номер документа|Дебет|Кредит|Контрагент.Наименование |Контрагент.ИНН |Контрагент.КПП |Контрагент.Счет |Контрагент.БИК |Контрагент.Наименование банка |Назначение платежа|Тип документа": BankStatement_3_process},
                  {"Дата операции|Номер документа|Дебет|Кредит|Контрагент.Наименование |Контрагент.ИНН |Контрагент.КПП |Контрагент.Счет |Контрагент.БИК |Контрагент.Наименование банка |Назначение платежа|Код дебитора|Тип документа": BankStatement_3_process},
@@ -77,23 +86,68 @@ HDRSIGNATURES = [{"Дата документа|Дата операции|№|Б�
                  {"Номер документа|Дата документа|Дата операции|Счёт|Контрагент|ИНН контрагента|БИК банка контрагента|Корр.счёт банка контрагента|Наименование банка контрагента|Счёт контрагента|Списание|Зачисление|Назначение платежа": BankStatement_6_process},
                  {"Template Code|repStatementsRurExcel.xls": IgnoreHDR_process},
                  {"Номер|Контрагент|Реквизиты контрагента|Назначение платежа|Дебет|Кредит": IgnoreHDR_process},
+                 {"XDO_?accountNumber?|<?/data/ean?>|<?/data/ean?>": IgnoreHDR_process},
                  {"Дата проводки|Счет.Дебет|Счет.Кредит|Сумма по дебету|Сумма по кредиту|№ документа|ВО|Банк (БИК и наименование)|Назначение платежа": BankStatement_7_process},
+                 #{"Дата проводки|Дата проводки|Счет.Дебет|Счет|Счет.Кредит|Сумма по дебету|Сумма по дебету|Сумма по кредиту|№ документа|ВО|Банк (БИК и наименование)|Банк (БИК и наименование)|Назначение платежа": BankStatement_7_process},
                  {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Код|Назначение платежа|Очер. платежа|Бюджетный платеж.Статус сост.|Бюджетный платеж.КБК|Бюджетный платеж.ОКТМО|Бюджетный платеж.Основание|Бюджетный платеж.Налог. период|Бюджетный платеж.Номер док.|ID опер.": BankStatement_8_process},
                  {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Назначение платежа|Очер. платежа|ID опер.": BankStatement_8_process},
                  {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Рез. Поле|Код|Код выплат|Назначение платежа|Очер. платежа|Вид условия оплаты|Основание для списания|Бюджетный платеж.Статус сост.|Бюджетный платеж.КБК|Бюджетный платеж.ОКТМО|Бюджетный платеж.Основание|Бюджетный платеж.Налог. период|Бюджетный платеж.Номер док.|Бюджетный платеж.Дата док.|ID опер.": BankStatement_8_process},
+                 {"Дата опер.|КО|Номер докум.|Дата докум.|Дебет|Кредит|Рублевое покрытие|Контрагент.ИНН|Контрагент.КПП|Контрагент.Наименование|Контрагент.Счет|Контрагент.БИК|Контрагент.Коррсчет|Контрагент.Банк|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Клиент.КПП|Клиент.БИК|Клиент.Коррсчет|Клиент.Банк|Рез. Поле|Код|Код выплат|Назначение платежа|Очер. платежа|Вид условия оплаты|Основание для списания|Бюджетный платеж.Статус сост.|Бюджетный платеж.КБК|Бюджетный платеж.ОКТМО|Бюджетный платеж.Основание|Бюджетный платеж.Налог. период|Бюджетный платеж.Номер док.|Бюджетный платеж.Дата док.|ID опер.|ID докум.": BankStatement_8_process},
                  {"Дата операции|№ док.|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Лицевой счет|Дебет|Кредит|Назначение": BankStatement_9_process},
+                 {"Дата операции|№ док.|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Лицевой счет|Дебет|Кредит|Назначение|Сумма в нац. покрытии|Курс": BankStatement_9_process},
                  {"Дата|Вид опер.|№ док.|БИК|Банк контрагента|Контрагент|ИНН контрагента|Счёт контрагента|Дебет (RUB)|Кредит (RUB)|Операция": BankStatement_10_process},
                  {"Дата|Номер|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Счет контрагента|Дебет, RUR|Кредит, RUR|Назначение": BankStatement_11_process},
                  {"Дата|РО|Док.|КБ|Внеш.счет|Счет|Дебет|Кредит|Назначение|Контрагент|Контр. ИНН": BankStatement_12_process},
                  {"Документ|Дата операции|Корреспондент.Наименование|Корреспондент.ИНН|Корреспондент.КПП|Корреспондент.Счет|Корреспондент.БИК|Вх.остаток|Оборот Дт|Оборот Кт|Назначение платежа": BankStatement_13_process},
                  {"Тип|Дата|Номер|Вид операции|Сумма|Валюта|Основание платежа|БИК Банка получателя|Счет Получателя|Наименование Получателя": BankStatement_14_process},
-                 {"№ П/П|Дата операции / Posting date|Дата валютир. / Value|Вид опер. / Op. type|Номер документа / Document number|Реквизиты корреспондента /Counter party details.Наименование / Name|Реквизиты корреспондента /Counter party details.Счет / Account|Реквизиты корреспондента /Counter party details.Банк / Bank|Дебет / Debit|Кредит / Credit|Основание операции (назначение платежа) / Payment details": BankStatement_15_process}]
+                 {"№ П/П|Дата операции / Posting date|Дата валютир. / Value|Вид опер. / Op. type|Номер документа / Document number|Реквизиты корреспондента /Counter party details.Наименование / Name|Реквизиты корреспондента /Counter party details.Счет / Account|Реквизиты корреспондента /Counter party details.Банк / Bank|Дебет / Debit|Кредит / Credit|Основание операции (назначение платежа) / Payment details": BankStatement_15_process},
+                 {"№ документа|Дата|БИК|№ Счёта|Деб. оборот|Кред. оборот|ИНН и наименование получателя|Назначение платежа": BankStatement_16_process},
+                 {"Дата|№ док.|ВО|Банк контрагента|Контрагент|Счет контрагента|Дебет|Кредит|Назначение платежа": BankStatement_17_process},
+                 {"№ п/п|Дата совершения операции (дд.мм.гг)|Реквизиты документа, на основании которого была совершена операция по счету (специальному банковскому счету).вид (шифр)|Реквизиты документа, на основании которого была совершена операция по счету (специальному банковскому счету).номер|Реквизиты документа, на основании которого была совершена операция по счету (специальному банковскому счету).дата|Реквизиты банка плательщика/получателя денежных средств.номер корреспондентского счета|Реквизиты банка плательщика/получателя денежных средств.наименование|Реквизиты банка плательщика/получателя денежных средств.БИК|Реквизиты плательщика/получателя денежных средств.наименование/Ф.И.О.|Реквизиты плательщика/получателя денежных средств.ИНН/КИО|Реквизиты плательщика/получателя денежных средств.КПП|Реквизиты плательщика/получателя денежных средств.номер счета (специального банковского счета)|Сумма операции по счету (специальному банковскому счету).по дебету|Сумма операции по счету (специальному банковскому счету).по кредиту|Назначение платежа": BankStatement_18_process},
+                 {"Номер|Номер счёта|Дата|Контрагент cчёт|Контрагент|Поступление|Валюта|Списание|Валюта|Назначение": BankStatement_19_process},
+                 {"№ п.п|№ док.|Дата операции|БИК/SWIFT банка плат.|Наименование Банка плательщика|Наименование плательщика|ИНН плательщика|№ счета плательщика|БИК/SWIFT банка получ.|Наименование банка получателя|Наименование получателя|ИНН получателя|№ счета получателя|Сальдо входящее|Дебет|Кредит|Сальдо исходящее|Назначение платежа": BankStatement_20_process},
+                 {"Дата док.|№ док.|Дата операции|ВО|Название корр.|ИНН корр.|БИК банка корр.|Счет корр.|Дебет|Кредит|Назначение": BankStatement_21_process},
+                 {"|№ п.п|№ док.|Дата операции|БИК/SWIFT банка плат.|Наименование Банка плательщика|Наименование плательщика|ИНН плательщика|№ счета плательщика|БИК/SWIFT банка получ.|Наименование банка получателя|Наименование получателя|ИНН получателя|№ счета получателя|Сальдо входящее|Дебет|Кредит|Сальдо исходящее|Назначение платежа": BankStatement_20_process},
+                 ]
+
+"""
+Берём первые пятдесят строк
+Сливаем каждую строку со следующей
+В результирующем датасете ищем первую строку с минимальным количеством нулов
+"""
+def findHeaderRow(df: pd.DataFrame) -> tuple[int, int, list[int]]:
+    df = df.iloc[:50].fillna("").astype(str)
+    result = pd.DataFrame(columns=["_idx", "_cnas", "_header"])
+    axis=0
+    # Delete rows containing either 75% or more than 75% NaN Values
+    perc = 20.0 
+    min_count =  int(((100-perc)/100)*df.shape[1] + 1)
+    #df = df.dropna( axis=0, thresh=min_count)
+
+    for idx in range(len(df.index)-1):
+        
+        header1 = df.iloc[idx].replace('\n', '').replace(r'\s+', '', regex=True).replace(r'\d+\.?\d*', '', regex=True).fillna("").astype(str)
+        if header1.mask(header1 == '').isna().sum() <= min_count:
+            header2 = df.iloc[idx+1].fillna("").astype(str)
+            header = pd.concat([header1, header2], axis=1).apply(
+                lambda x: '.'.join([y for y in x if y]), axis=1)
+            cnas = header.mask(header == '').isna().sum()
+            rowidx = df.iloc[idx:idx+1].index[0]
+            #newline = pd.DataFrame()
+            #result = pd.concat([result, pd.DataFrame([{"_idx": rowidx, "_cnas": cnas, "_header": "|".join(header)}])])
+            result = pd.concat([result, pd.DataFrame([{"_idx": rowidx, "_cnas": cnas, "_header": header}])])
+    result = result[result._idx==result[result._cnas==result._cnas.min()]._idx.min()]
+    header = result._header[0]
+    return result[result._cnas==result._cnas.min()]._idx.min(), header.mask(header=='').notna().sum(), header.mask(header=='').dropna().index.to_list()
 
 
 def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     firstrow = 0
-    lastrow = len(df.index)
+    lastrow = len(df.index)-1
     ncols = len(df.columns)
+    footer = pd.DataFrame()
+
+    firstrowidx, nheadercols, headercols = findHeaderRow(df)
 
     #Удаляем из хвоста все столбцы, где больше 90% значений NaN
     partialColumns = (df.isnull().sum() > lastrow * 0.9)
@@ -101,34 +155,43 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
         if not partialColumns.iloc[idx]:
             break
         ncols-=1
-    df = df.iloc[:,:ncols]
+    dfFilled = df.iloc[:,:ncols]
 
-    for idx in range(len(df.index)):
-        cnavalues = df.iloc[idx].isnull().sum()
-        if cnavalues*100/ncols < 53 and not all(df.iloc[idx][ncols-3:].isnull()):
-            firstrow = idx
-            break
+
+    #for idx in range(len(df.index)):
+    #    cnavalues = dfFilled.iloc[idx].isnull().sum()
+    #    if cnavalues*100/ncols < 53 and not all(dfFilled.iloc[idx][ncols-3:].isnull()):
+    #        firstrow = idx
+    #        break
+    
+    #firstrowidx = df.dropna(subset=[df.columns[-3], df.columns[-2], df.columns[-1]], how='all').isna().sum(axis=1).idxmin()
+    lastrpowidx = firstrowidx + 1 # type: ignore
+
     for idx in range(len(df.index)-1, 0, -1):
-        cnavalues = df.iloc[idx].isnull().sum()
-        if cnavalues*100/ncols < 53 and not all(df.iloc[idx][ncols-3:].isnull()):
+        cnavalues = dfFilled.iloc[idx].isnull().sum()
+        if (ncols-cnavalues)*100/nheadercols > 47 and not all(dfFilled.iloc[idx][ncols-3:].isnull()):
             lastrow = idx
+            lastrpowidx = df.iloc[lastrow:lastrow+1].index[0]
             break
+    
+
+    #header = df.iloc[:firstrow].dropna(axis=1,how='all').dropna(axis=0,how='all')
+    #footer = df.iloc[lastrow + 1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all')
+    header = df.loc[:firstrowidx-1].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
+    footer = df.loc[lastrpowidx+1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
 
 
-    header = df.iloc[:firstrow].dropna(axis=1,how='all').dropna(axis=0,how='all')
-    footer = df.iloc[lastrow + 1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all')
-
-
-    df = df.iloc[firstrow : lastrow + 1]
+    #df = df.iloc[firstrow : lastrow + 1]
+    df = df.loc[firstrowidx : lastrpowidx, headercols]
     #Удаляем из головы все столбцы, где больше 40% значений NaN
-    lastrow = len(df.index)
-    scol = 0
-    partialColumns = (df.isnull().sum() > lastrow * 0.7)
-    for idx in range(len(partialColumns.index)-1):
-        if not partialColumns.iloc[idx]:
-            break
-        scol+=1
-    df = df.iloc[:,scol:]
+    #lastrow = len(df.index)
+    #scol = 0
+    #partialColumns = (df.isnull().sum() > lastrow * 0.7)
+    #for idx in range(len(partialColumns.index)-1):
+    #    if not partialColumns.iloc[idx]:
+    #        break
+    #    scol+=1
+    #df = df.iloc[:,scol:]
 
     #data = df.iloc[firstrow : lastrow + 1].dropna(axis=1,how='all').dropna(axis=0,how='all')
     data = df.dropna(axis=1,how='all').dropna(axis=0,how='all')
@@ -142,10 +205,9 @@ def setDataColumns(df) -> pd.DataFrame:
     header1 = df.iloc[0]
     header1 = header1.fillna(method='ffill').fillna("")
     datastart = 1
-    #Здеесь возможно надо проверять не на null, а на тип - intger или дата (через regex)
+    #Здеесь возможно надо проверять не на null, а на naп - intger или дата (через regex)
     if df.iloc[1].isnull().iloc[0]:
-        header2 = df.iloc[1]
-        header2 = header2.fillna("")
+        header2 = df.iloc[1].fillna("")
         header = pd.concat([header1, header2], axis=1).apply(
             lambda x: '.'.join([y for y in x if y]), axis=1)
         datastart = 2
@@ -153,13 +215,28 @@ def setDataColumns(df) -> pd.DataFrame:
         header = header1
     #header = header.drop_duplicates()
     df = df[datastart:]
-    df.columns = header.str.replace('\n', ' ').fillna("column")
+    df.columns = header.str.replace('\n', ' ').replace(r'\s+', ' ', regex=True).fillna("column")
     ncols = len(df.columns)
     return df[df[list(df.columns)].isnull().sum(axis=1) < ncols * 0.8].dropna(
         axis=0, how='all'
     )
 
 DATATYPES: list[str] = []
+
+#removes rows, containint 1, 2, 3, 4, 5, ... (assuming that is just rows with columns numbers, which should be ignored)
+def cleanupRawData(df: pd.DataFrame) -> pd.DataFrame:
+    ncols = len(df.columns)
+    row2del = "_".join([str(x) for x in range(1, ncols+1)])
+
+    df["__rowval"] = pd.Series(df.fillna("").replace(r'\s+', '', regex=True).values.tolist()).str.join('_').values
+    df = df[df.__rowval != row2del]
+
+    return df.drop("__rowval", axis=1)
+
+#sets to_ignore to True, if entrDate is empty
+def cleanupProcessedData(df: pd.DataFrame) -> pd.DataFrame:
+    df = df[df.entryDate.notna()]
+    return df
 
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
@@ -179,11 +256,13 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
             header, data, footer = getTableRange(df)
 
             data = setDataColumns(data)
+            data = cleanupRawData(data)
             signature = "|".join(data.columns).replace('\n', ' ')
             funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
             func = funcs[0] if funcs else NoneHDR_process
-            data = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
-            result = pd.concat([result, data])
+            outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
+            outdata = cleanupProcessedData(outdata)
+            result = pd.concat([result, outdata])
 
         except Exception as err:
             berror = True   
@@ -244,21 +323,22 @@ def main():
   
         #for file in fileslist:
         for fname in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), fileslist):
-            parts = os.path.split(os.path.dirname(fname))
-            clientid = parts[1]
-            inname = fname
-            try:
-                pages = 0
-                if bSplit and cnt % maxFiles == 0:
-                    outname = outbasename + str(cnt) + ".csv"
-                try :
-                    cnt += runParsing(clientid, outname, inname, doneFolder, logf)
+            if Path(fname).is_file():
+                parts = os.path.split(os.path.dirname(fname))
+                clientid = parts[1]
+                inname = fname
+                try:
+                    pages = 0
+                    if bSplit and cnt % maxFiles == 0:
+                        outname = outbasename + str(cnt) + ".csv"
+                    try :
+                        cnt += runParsing(clientid, outname, inname, doneFolder, logf)
+                    except Exception as err:
+                        logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
+                        print(f"{datetime.now()}:{inname}:ERROR:{err}")
                 except Exception as err:
-                    logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
-                    print(f"{datetime.now()}:{inname}:ERROR:{err}")
-            except Exception as err:
-                print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
-                logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
+                    print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
+                    logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
 
     #with open('datatypes.csv', 'w', encoding='utf-8') as f:
     df = pd.DataFrame(np.unique(DATATYPES))
@@ -276,8 +356,8 @@ def getArguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-d", "--data", default="./data/test_preanalysis.csv", help="Data folder")
     parser.add_argument("-r", "--done", default="./data/Done", help="Done folder")
-    parser.add_argument("-l", "--logfile", default="./data/test_preanalysis_log.log.txt", help="Log file")
-    parser.add_argument("-o", "--output", default="./data/test_preanalysis_parsed_statements", help="Resulting file name (no extension)")
+    parser.add_argument("-l", "--logfile", default="./data/test_parsing_log.log.txt", help="Log file")
+    parser.add_argument("-o", "--output", default="./data/test_parsed_statements", help="Resulting file name (no extension)")
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
     parser.add_argument("--pdf", default=False, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")

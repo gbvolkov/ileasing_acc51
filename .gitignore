@@ -7,3 +7,5 @@ extractstmts.7z
 data/Done.7z
 data/test_preanalysis.csv
 data/test.xlsx
+data/test.csv
+data/*

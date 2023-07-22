@@ -126,7 +126,7 @@ def main():
     with open(logname, "w", encoding='utf-8') as logf:
         cnt = 0
 
-        FILEEXT = ['.xls', '.xlsx', '.pdf']
+        FILEEXT = ['.xls', '.xlsx', '.xlsm', '.pdf']
         sys.stdout.reconfigure(encoding="utf-8") # type: ignore
 
         for root, dirs, files in os.walk(DIRPATH):
