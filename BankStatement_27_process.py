@@ -14,7 +14,7 @@ def BankStatement_27_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     #df["cpBIC"] = data["БИК банка корр."]
     #df["cpBank"] = data["Банк контрагента"]
     df["cpAcc"] = data["Счет плательщика/получателя"]
-    if not data["Наименование корреспондирующего счета"].empty:
+    if "Наименование корреспондирующего счета" in data.columns:
         df["cpName"] = data["Наименование корреспондирующего счета"]
     df["Debet"] = data['Сумма Дебет']
     df["Credit"] = data['Сумма Кредит']
