@@ -33,7 +33,7 @@ def BankStatement_10_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     if obalance.size > 1:
         df["openBalance"] = obalance.iloc[:,1].values[0]
 
-    cbalance = footer[footer.iloc[:,0].str.startswith('Исходящий остаток')].dropna(axis=1,how='all')
+    cbalance = footer[footer.iloc[:,0].fillna("").str.startswith('Исходящий остаток')].dropna(axis=1,how='all')
     if cbalance.size > 1:
         df["closingBalance"] = cbalance.iloc[:,1].values[0]
     turnovers = footer[footer.iloc[:,0] == 'ИТОГО ОБОРОТЫ'].dropna(axis=1,how='all')

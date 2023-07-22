@@ -24,7 +24,7 @@ def BankStatement_24_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["clientAcc"] = data["Клиент.Счет"]
     df["clientName"] = data["Клиент.Наименование"]
 
-    obalance = header[header.iloc[:,0].str.startswith('Входящий остаток')].dropna(axis=1,how='all')
+    obalance = header[header.iloc[:,0].fillna("").str.startswith('Входящий остаток')].dropna(axis=1,how='all')
     if obalance.size > 1:
         df["openBalance"] = obalance.iloc[:,1].values[0]
     cbalance = footer[footer.iloc[:,0].str.startswith('Исходящий остаток')].dropna(axis=1,how='all')
