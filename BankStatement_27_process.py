@@ -3,6 +3,7 @@ import pandas as pd
 from const import COLUMNS
 
 #Номер строки|Дата проводки|Вид операции|Номер документа клиента|Номер документа банка (Номер документа в СМФР)|Счет плательщика/получателя|Сумма Дебет|Сумма Кредит|Назначение платежа
+#Номер строки|Дата проводки|Вид операции|Номер документа клиента|Номер документа банка (Номер документа в СМФР)|Счет плательщика/получателя|Наименование корреспондирующего счета|Сумма Дебет|Сумма Кредит|Назначение платежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -13,6 +14,8 @@ def BankStatement_27_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     #df["cpBIC"] = data["БИК банка корр."]
     #df["cpBank"] = data["Банк контрагента"]
     df["cpAcc"] = data["Счет плательщика/получателя"]
+    if not data["Наименование корреспондирующего счета"].empty:
+        df["cpName"] = data["Наименование корреспондирующего счета"]
     df["Debet"] = data['Сумма Дебет']
     df["Credit"] = data['Сумма Кредит']
     df["Comment"] = data["Назначение платежа"]
