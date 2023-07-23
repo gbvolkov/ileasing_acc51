@@ -19,7 +19,7 @@ import camelot # type: ignore
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextBoxHorizontal, LTTextLineHorizontal
 
-from const import COLUMNS
+from const import COLUMNS, DOCTYPES
 from BankStatement_1_process import BankStatement_1_process
 from BankStatement_2_process import BankStatement_2_process
 from BankStatement_3_process import BankStatement_3_process
@@ -291,6 +291,38 @@ def cleanupProcessedData(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df.entryDate.notna()]
     return df
 
+
+def getHeadLinesEXCEL(data, nlines: int = 3):
+    idx = 0
+    result = []
+    while (idx < data.shape[0] and idx < nlines):
+        row = data.iloc[[idx][0]]
+        result.append(row.dropna(how='all'))
+        idx += 1
+    return result
+
+def getExcelSheetKind(df):
+    kinds = []
+    headers = getHeadLinesEXCEL(df, 10)
+    if suitable := [
+        kind
+        for kind in DOCTYPES
+        if len(
+            [
+                row
+                for row in headers
+                if any(
+                    row.astype(str)
+                    .str.contains(kind, case=False)
+                    .dropna(how='all')
+                )
+            ]
+        )
+        > 0
+    ]:
+        kinds.append(suitable[0])
+    return kinds[0] if kinds else "UNDEFINED"
+
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
     df = pd.DataFrame()
@@ -307,17 +339,20 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
             df = sheets[sheet]
             df = df.dropna(axis=1,how='all')
             if not df.empty:
-                header, data, footer = getTableRange(df)
+                kind = getExcelSheetKind(df)
+                if kind == "выписка":
+                    header, data, footer = getTableRange(df)
 
-                data = setDataColumns(data)
-                data = cleanupRawData(data)
-                signature = "|".join(data.columns).replace('\n', ' ')
-                funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-                func = funcs[0] if funcs else NoneHDR_process
-                outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
-                outdata = cleanupProcessedData(outdata)
-                result = pd.concat([result, outdata])
-
+                    data = setDataColumns(data)
+                    data = cleanupRawData(data)
+                    signature = "|".join(data.columns).replace('\n', ' ')
+                    funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+                    func = funcs[0] if funcs else NoneHDR_process
+                    outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
+                    outdata = cleanupProcessedData(outdata)
+                    result = pd.concat([result, outdata])
+                else: 
+                    logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
         except Exception as err:
             berror = True   
             print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
