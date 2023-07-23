@@ -3,6 +3,7 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата|№ док.|ВО|Название корр.|ИНН контрагента|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение
+#Дата|№ док.|ВО|Название корр.|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -13,7 +14,8 @@ def BankStatement_22_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["cpBIC"] = data["БИК банка корр."]
     #df["cpBank"] = data["Банк контрагента"]
     df["cpAcc"] = data["Лицевой счет"]
-    #df["cpTaxCode"] = data["Корреспондент.ИНН"]
+    if "ИНН контрагента" in data.columns:
+        df["cpTaxCode"] = data["ИНН контрагента"]
     df["cpName"] = data["Название корр."]
     df["Debet"] = data['Дебет']
     df["Credit"] = data['Кредит']
@@ -26,10 +28,10 @@ def BankStatement_22_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     obalance = header[header.iloc[:,0].fillna("").str.startswith('ВХОДЯЩИЙ ОСТАТОК')].dropna(axis=1,how='all')
     if obalance.size > 1:
         df["openBalance"] = obalance.iloc[:,1].values[0]
-    cbalance = footer[footer.iloc[:,0] == 'ИСХОДЯЩИЙ ОСТАТОК'].dropna(axis=1,how='all')
+    cbalance = footer[footer.iloc[:,0].fillna("").str.startswith('ИСХОДЯЩИЙ ОСТАТОК')].dropna(axis=1,how='all')
     if cbalance.size > 1:
         df["closingBalance"] = cbalance.iloc[:,1].values[0]
-    turnovers = footer[footer.iloc[:,0] == 'Обороты по дебету/ кредиту'].dropna(axis=1,how='all')
+    turnovers = footer[footer.iloc[:,0].isin(['Обороты по дебету/ кредиту', 'Итого'])].dropna(axis=1,how='all')
     if turnovers.size > 1:
         df["totalDebet"] = turnovers.iloc[:,1].values[0]
     if turnovers.size > 2:

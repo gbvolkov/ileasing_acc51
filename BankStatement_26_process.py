@@ -3,6 +3,7 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата операции|Номер документа|Дебет|Кредит|Контрагент.Наименование|Контрагент.ИНН|Контрагент.КПП|Контрагент.БИК|Контрагент.Наименование банка|Назначение платежа|Код дебитора|Тип документа
+#Дата операции|Номер документа|Дебет|Кредит|Контрагент.Наименование|Контрагент.ИНН|Контрагент.КПП|Контрагент.БИК|Контрагент.Наименованиебанка|Назначение платежа|Код дебитора|Тип документа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -13,7 +14,7 @@ def BankStatement_26_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
 
     df["entryDate"] = data["Дата операции"]
     df["cpBIC"] = data["Контрагент.БИК"]
-    df["cpBank"] = data["Контрагент.Наименование банка"]
+    df["cpBank"] = data["Контрагент.Наименованиебанка"]
     #df["cpAcc"] = data["Контрагент.Счет "]
     df["Debet"] = data["Дебет"]
     df["Credit"] = data["Кредит"]

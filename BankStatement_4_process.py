@@ -14,7 +14,7 @@ def BankStatement_4_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
     df["cpBIC"] = data["Реквизиты корреспондента.Банк"]
     #df["cpBank"] = data["Контрагент.Наименование банка "]
     df["cpAcc"] = data["Реквизиты корреспондента.Счет"]
-    df["cpTaxCode"] = data["Реквизиты корреспондента.ИНН Контрагента"]
+    df["cpTaxCode"] = data["Реквизиты корреспондента.ИННКонтрагента"]
     df["cpName"] = data["Реквизиты корреспондента.Наименование"]
     df["Debet"] = data["Дебет Сумма/Сумма в НП"]
     df["Credit"] = data["Кредит Сумма/Сумма в НП"]

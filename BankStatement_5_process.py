@@ -16,7 +16,7 @@ def BankStatement_5_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
 
     df["entryDate"] = data["Дата"]
     df["cpBIC"] = data["Контрагент.БИК"]
-    df["cpBank"] = data["Контрагент.Наименование банка"]
+    df["cpBank"] = data["Контрагент.Наименованиебанка"]
     if "Контрагент.Счет" in data.columns :
         df["cpAcc"] = data["Контрагент.Счет"]
     elif  "Контрагент.Счёт" in data.columns :

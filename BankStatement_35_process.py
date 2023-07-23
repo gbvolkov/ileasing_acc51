@@ -2,22 +2,22 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата|№|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Корреспондент.БИК|Корреспондент.Счет|Корреспондент.Наименование|В О|Содержание|Обороты.Дебет|Обороты.Кредит
+#Дата проводки|№ документа|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Корреспондент.БИК|Корреспондент.Банк|Корреспондент.Счет|Корреспондент.ИНН|Корреспондент.Наименование|В О|Назначение платежа|Обороты.Дебет|Обороты.Кредит|Референс проводки
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
-def BankStatement_24_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+def BankStatement_35_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата"]
+    df["entryDate"] = data["Дата проводки"]
     df["cpBIC"] = data["Корреспондент.БИК"]
-    #df["cpBank"] = data["Банк контрагента"]
+    df["cpBank"] = data["Корреспондент.Банк"]
     df["cpAcc"] = data["Корреспондент.Счет"]
-    #df["cpTaxCode"] = data["Реквизиты плательщика/получателя денежных средств.ИНН/КИО"]
+    df["cpTaxCode"] = data["Корреспондент.ИНН"]
     df["cpName"] = data["Корреспондент.Наименование"]
     df["Debet"] = data['Обороты.Дебет']
     df["Credit"] = data['Обороты.Кредит']
-    df["Comment"] = data["Содержание"]
+    df["Comment"] = data["Назначение платежа"]
 
     #df["clientBIC"] = header.iloc[1,0]
     #df["clientBank"] = header.iloc[1,0]

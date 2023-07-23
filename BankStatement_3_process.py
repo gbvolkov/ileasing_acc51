@@ -12,13 +12,14 @@ def BankStatement_3_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["Дата операции"]
-    df["cpBIC"] = data["Контрагент.БИК "]
-    df["cpBank"] = data["Контрагент.Наименование банка "]
-    df["cpAcc"] = data["Контрагент.Счет "]
+    df["cpBIC"] = data["Контрагент.БИК"]
+    df["cpBank"] = data["Контрагент.Наименованиебанка"]
+    if "Контрагент.Счет" in data.columns:
+        df["cpAcc"] = data["Контрагент.Счет"]
     df["Debet"] = data["Дебет"]
     df["Credit"] = data["Кредит"]
-    df["cpTaxCode"] = data["Контрагент.ИНН "]
-    df["cpName"] = data["Контрагент.Наименование "]
+    df["cpTaxCode"] = data["Контрагент.ИНН"]
+    df["cpName"] = data["Контрагент.Наименование"]
     df["Comment"] = data["Назначение платежа"]
 
     #header: За период,с 01.05.2021 по 31.05.2021,,,,

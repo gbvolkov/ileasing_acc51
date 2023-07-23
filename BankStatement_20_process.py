@@ -24,7 +24,8 @@ def BankStatement_20_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["clientBIC"] = data.apply(lambda row: row['БИК/SWIFT банка плат.'] if pd.isna(row['Кредит']) else row['БИК/SWIFT банка получ.'], axis=1)
     df["clientBank"] = data.apply(lambda row: row['Наименование Банка плательщика'] if pd.isna(row['Кредит']) else row['Наименование банка получателя'], axis=1)
     df["clientAcc"] = data.apply(lambda row: row['№ счета плательщика'] if pd.isna(row['Кредит']) else row['№ счета получателя'], axis=1)
-    df["clientName"] = data.apply(lambda row: row['Наименование плательщика'] if pd.isna(row['Дебет']) else row['Наименование получателя'], axis=1)
+    df["clientName"] = data.apply(lambda row: row['Наименование плательщика'] if pd.isna(row['Кредит']) else row['Наименование получателя'], axis=1)
+    df["clientTaxCode"] = data.apply(lambda row: row['ИНН плательщика'] if pd.isna(row['Кредит']) else row['ИНН получателя'], axis=1)
 
     df["openBalance"] = data["Сальдо входящее"].iloc[0]
     df["closingBalance"] = data["Сальдо исходящее"].iloc[len(data)-1]

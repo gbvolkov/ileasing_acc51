@@ -24,6 +24,7 @@ def BankStatement_8_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
     df["clientBIC"] = data["Клиент.БИК"]
     df["clientBank"] = data["Клиент.Банк"]
     df["clientAcc"] = data["Клиент.Счет"]
+    df["clientTaxCode"] = data["Клиент.ИНН"]
     
     obalance = header[header.iloc[:,0] == 'Входящий остаток'].dropna(axis=1,how='all')
     if obalance.size > 2:
