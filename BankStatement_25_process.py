@@ -21,7 +21,8 @@ def BankStatement_25_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["Comment"] = data["Назначение платежа"]
 
     #df["clientBIC"] = header.iloc[1,0]
-    df["clientBank"] = header.iloc[0,0]
+    if len(header.axes[0]) >= 1:
+        df["clientBank"] = header.iloc[0,0]
     #df["clientAcc"] = header.iloc[0,0]
     #df["clientName"] = header.iloc[0,0]
 

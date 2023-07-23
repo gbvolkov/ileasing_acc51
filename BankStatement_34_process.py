@@ -32,11 +32,12 @@ def BankStatement_34_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
         df["openBalance"] = header.iloc[4,0]
     if len(header.axes[0] >= 2) :
         df["closingBalance"] = footer.iloc[1,0]
-    turnovers = footer[footer.iloc[:,0] == 'Итого:'].dropna(axis=1,how='all')
-    if turnovers.size > 1:
-        df["totalDebet"] = turnovers.iloc[:,1].values[0]
-    if turnovers.size > 2:
-        df["totalCredit"] = turnovers.iloc[:,2].values[0]
+    if len(footer.axes[0]) >= 1:
+        turnovers = footer[footer.iloc[:,0] == 'Итого:'].dropna(axis=1,how='all')
+        if turnovers.size > 1:
+            df["totalDebet"] = turnovers.iloc[:,1].values[0]
+        if turnovers.size > 2:
+            df["totalCredit"] = turnovers.iloc[:,2].values[0]
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"

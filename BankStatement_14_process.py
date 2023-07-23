@@ -29,11 +29,12 @@ def BankStatement_14_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
 
-    df["clientAcc"] = header.iloc[1,0]
-    df["openBalance"] = header.iloc[1,3]
-    df["closingBalance"] = header.iloc[1,4]
-    df["totalDebet"] = header.iloc[1,5]
-    df["totalCredit"] = header.iloc[1,6]
+    if len(header.axes[0]) >= 2:
+        df["clientAcc"] = header.iloc[1,0]
+        df["openBalance"] = header.iloc[1,3]
+        df["closingBalance"] = header.iloc[1,4]
+        df["totalDebet"] = header.iloc[1,5]
+        df["totalCredit"] = header.iloc[1,6]
     
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"

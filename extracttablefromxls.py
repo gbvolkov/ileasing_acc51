@@ -255,10 +255,11 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
 
 def setDataColumns(df) -> pd.DataFrame:
     header1 = df.iloc[0]
-    header1 = header1.fillna(method='ffill').fillna("").astype(str)
+    header1 = header1.mask(header1 == '').fillna(method='ffill').fillna("").astype(str)
     datastart = 1
-    #Здеесь возможно надо проверять не на null, а на naп - intger или дата (через regex)
-    if len(df.axes[0]) > 1 and df.iloc[1].isnull().iloc[0]:
+    #Здеесь возможно надо проверять не на null, а на naп - integer или дата (через regex)
+
+    if len(df.axes[0]) > 1 and df.iloc[1].mask(df.iloc[1]=='').isnull().iloc[0]:
         header2 = df.iloc[1].fillna("").astype(str)
         header2 = header2.replace('\n', '').replace(r'\s+', '', regex=True).replace(r'\d+\.?\d*', '', regex=True).fillna("").astype(str)
         header = pd.concat([header1, header2], axis=1).apply(
@@ -328,8 +329,6 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
     df = pd.DataFrame()
     data = pd.DataFrame()
     result = pd.DataFrame()
-    nameparts = os.path.split(inname)
-    #fname = os.path.splitext(nameparts[1])[0]
 
     sheets = pd.read_excel(inname, header=None, sheet_name=None)
     if len(sheets) > 1 :
@@ -359,43 +358,58 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
             logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
             logf.write(logstr)
     return (result, len(sheets), berror)
+
+def pdfPagesCount(pdfname)->int:
+    with open(pdfname,'rb') as f:
+        pdfReader = PyPDF2.PdfFileReader(f)
+        return pdfReader.getNumPages()
+
+def getPDFData(inname: str) -> pd.DataFrame:
+    npages = pdfPagesCount(inname)
+    spage = 1
+    cchunk = 100
+    df = pd.DataFrame()
+
+    if npages >= 500 :
+        print(datetime.now(), ":", inname, ':WARINING: huge pdf:', npages, " pages")
+        sys.stdout.flush()
+    while spage <= npages :
+        lpage = min(spage + cchunk - 1, npages)
+        tables = camelot.read_pdf(inname, pages=f'{spage}-{lpage}', line_scale = 100, shift_text=['l', 't'], backend="poppler", layout_kwargs = {"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None})
+        for tbl in tables :
+            df = pd.concat([df, tbl.df])
+        if npages >= 500 :
+            print(datetime.now(), ":", inname, f':PROCESSED: {spage}-{lpage} of ', npages, " pages")
+            sys.stdout.flush()
+        spage = lpage + 1
+    return df.reset_index(drop=True).dropna(axis=1,how='all')
+
 
 def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
-    df = pd.DataFrame()
     data = pd.DataFrame()
     result = pd.DataFrame()
-    nameparts = os.path.split(inname)
-    #fname = os.path.splitext(nameparts[1])[0]
 
-    sheets = pd.read_excel(inname, header=None, sheet_name=None)
-    if len(sheets) > 1 :
-        print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
-    for sheet in sheets:
-        try:
-            df = sheets[sheet]
-            df = df.dropna(axis=1,how='all')
-            if not df.empty:
-                kind = getExcelSheetKind(df)
-                if kind == "выписка":
-                    header, data, footer = getTableRange(df)
+    try:
+        df = getPDFData(inname)
+        if not df.empty:
+            header, data, footer = getTableRange(df)
 
-                    data = setDataColumns(data)
-                    data = cleanupRawData(data)
-                    signature = "|".join(data.columns).replace('\n', ' ')
-                    funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-                    func = funcs[0] if funcs else NoneHDR_process
-                    outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
-                    outdata = cleanupProcessedData(outdata)
-                    result = pd.concat([result, outdata])
-                else: 
-                    logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
-        except Exception as err:
-            berror = True   
-            print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
-            logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
-            logf.write(logstr)
-    return (result, len(sheets), berror)
+            data = setDataColumns(data)
+            data = cleanupRawData(data)
+            signature = "|".join(data.columns).replace('\n', ' ')
+            funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+            func = funcs[0] if funcs else NoneHDR_process
+            outdata = func(header, data, footer, inname, clientid, "pdf", logf) # type: ignore
+            outdata = cleanupProcessedData(outdata)
+            result = pd.concat([result, outdata])
+    
+    except Exception as err:
+        berror = True   
+        print(f"{datetime.now()}:{inname}:ERROR:{err}")
+        logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:pdf:0:{type(err).__name__} {str(err)}\n"
+        logf.write(logstr)
+    return (result, 1, berror)
 
 def processOther(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     return (pd.DataFrame(), 0, True)
@@ -405,7 +419,10 @@ def process(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFra
 
     if inname.lower().endswith('.xls') or inname.lower().endswith('.xlsx'):
         processFunc = processExcel
-        
+    elif inname.lower().endswith('.pdf'):
+        processFunc = processPDF
+
+
     df, pages, berror = processFunc(inname, clientid, logf)
     return (df, pages, berror)
 
@@ -486,7 +503,7 @@ def getArguments():
     parser.add_argument("-o", "--output", default="./data/test_parsed_statements", help="Resulting file name (no extension)")
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
-    parser.add_argument("--pdf", default=False, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
+    parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
     parser.add_argument("--excel", default=True, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
     return vars(parser.parse_args())
 

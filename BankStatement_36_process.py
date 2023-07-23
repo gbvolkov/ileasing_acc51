@@ -25,9 +25,10 @@ def BankStatement_36_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     #df["clientBIC"] = header.iloc[1,0]
     #df["clientBank"] = header.iloc[1,0]
     df["clientAcc"] = data["Номер счета"]
-    cname = header[header.iloc[:,0] == 'Владелец счета'].dropna(axis=1,how='all')
-    if cname.size > 1:
-        df["clientName"] = cname.iloc[:,1].values[0]
+    if len(header.axes[0]) >= 1:
+        cname = header[header.iloc[:,0] == 'Владелец счета'].dropna(axis=1,how='all')
+        if cname.size > 1:
+            df["clientName"] = cname.iloc[:,1].values[0]
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"

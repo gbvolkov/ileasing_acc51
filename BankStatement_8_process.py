@@ -27,9 +27,10 @@ def BankStatement_8_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
     df["clientAcc"] = data["Клиент.Счет"]
     df["clientTaxCode"] = data["Клиент.ИНН"]
     
-    obalance = header[header.iloc[:,0] == 'Входящий остаток'].dropna(axis=1,how='all')
-    if obalance.size > 2:
-        df["openBalance"] = obalance.iloc[:,2].values[0]
+    if len(header.axes[0]) >= 1:
+        obalance = header[header.iloc[:,0] == 'Входящий остаток'].dropna(axis=1,how='all')
+        if obalance.size > 2:
+            df["openBalance"] = obalance.iloc[:,2].values[0]
 
     if footer.axes[0].size > 2 :
         turnovers = footer.iloc[2]

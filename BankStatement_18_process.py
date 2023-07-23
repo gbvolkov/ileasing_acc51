@@ -21,20 +21,22 @@ def BankStatement_18_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["Credit"] = data['Сумма операции по счету (специальному банковскому счету).покредиту']
     df["Comment"] = data["Назначение платежа"]
 
-    acc = header[header.iloc[:,0] == '№'].dropna(axis=1,how='all')
-    if acc.size > 1:
-        df["clientAcc"] = acc.iloc[:,1:].astype(int).astype(str).iloc[0,:].str.cat(sep = "")
+    if len(header.axes[0]) >= 15:
+        acc = header[header.iloc[:,0] == '№'].dropna(axis=1,how='all')
+        if acc.size > 1:
+            df["clientAcc"] = acc.iloc[:,1:].astype(int).astype(str).iloc[0,:].str.cat(sep = "")
 
-    df["clientName"] = header.iloc[14,0]
-    bic = header[header.iloc[:,0] == 'БИК'].dropna(axis=1,how='all')
-    if bic.size > 1:
-        df["clientBIC"] = bic.iloc[:,1:].astype(int).astype(str).iloc[0,:].str.cat(sep = "")
-    df["clientBank"] = header.iloc[8,0]
+        df["clientName"] = header.iloc[14,0]
+        bic = header[header.iloc[:,0] == 'БИК'].dropna(axis=1,how='all')
+        if bic.size > 1:
+            df["clientBIC"] = bic.iloc[:,1:].astype(int).astype(str).iloc[0,:].str.cat(sep = "")
+        df["clientBank"] = header.iloc[8,0]
 
-    df["openBalance"] = footer.iloc[3,0]
-    df["closingBalance"] = footer.iloc[3,6]
-    df["totalDebet"] = footer.iloc[3,2]
-    df["totalCredit"] = footer.iloc[3,3]
+    if len(footer.axes[0]) >= 4:
+        df["openBalance"] = footer.iloc[3,0]
+        df["closingBalance"] = footer.iloc[3,6]
+        df["totalDebet"] = footer.iloc[3,2]
+        df["totalCredit"] = footer.iloc[3,3]
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"
