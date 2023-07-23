@@ -258,7 +258,7 @@ def setDataColumns(df) -> pd.DataFrame:
     header1 = header1.fillna(method='ffill').fillna("").astype(str)
     datastart = 1
     #Здеесь возможно надо проверять не на null, а на naп - intger или дата (через regex)
-    if df.iloc[1].isnull().iloc[0]:
+    if len(df.axes[0]) > 1 and df.iloc[1].isnull().iloc[0]:
         header2 = df.iloc[1].fillna("").astype(str)
         header2 = header2.replace('\n', '').replace(r'\s+', '', regex=True).replace(r'\d+\.?\d*', '', regex=True).fillna("").astype(str)
         header = pd.concat([header1, header2], axis=1).apply(

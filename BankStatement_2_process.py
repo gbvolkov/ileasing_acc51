@@ -1,3 +1,4 @@
+from datetime import datetime
 from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
@@ -36,5 +37,6 @@ def BankStatement_2_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"
+    df['processdate'] = datetime.now()
 
     return df
