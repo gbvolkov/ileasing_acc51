@@ -287,9 +287,13 @@ def cleanupRawData(df: pd.DataFrame) -> pd.DataFrame:
 
     return df.drop("__rowval", axis=1)
 
+import warnings
+warnings.filterwarnings("ignore", 'This pattern has match groups')
+
 #sets to_ignore to True, if entrDate is empty
 def cleanupProcessedData(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df.entryDate.notna()]
+    df = df[df.entryDate.astype(str).str.contains(r"^(\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True)]
     return df
 
 
