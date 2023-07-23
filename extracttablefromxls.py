@@ -360,6 +360,43 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
             logf.write(logstr)
     return (result, len(sheets), berror)
 
+def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
+    berror = False
+    df = pd.DataFrame()
+    data = pd.DataFrame()
+    result = pd.DataFrame()
+    nameparts = os.path.split(inname)
+    #fname = os.path.splitext(nameparts[1])[0]
+
+    sheets = pd.read_excel(inname, header=None, sheet_name=None)
+    if len(sheets) > 1 :
+        print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
+    for sheet in sheets:
+        try:
+            df = sheets[sheet]
+            df = df.dropna(axis=1,how='all')
+            if not df.empty:
+                kind = getExcelSheetKind(df)
+                if kind == "выписка":
+                    header, data, footer = getTableRange(df)
+
+                    data = setDataColumns(data)
+                    data = cleanupRawData(data)
+                    signature = "|".join(data.columns).replace('\n', ' ')
+                    funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+                    func = funcs[0] if funcs else NoneHDR_process
+                    outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
+                    outdata = cleanupProcessedData(outdata)
+                    result = pd.concat([result, outdata])
+                else: 
+                    logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
+        except Exception as err:
+            berror = True   
+            print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
+            logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
+            logf.write(logstr)
+    return (result, len(sheets), berror)
+
 def processOther(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     return (pd.DataFrame(), 0, True)
 
