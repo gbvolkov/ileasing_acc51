@@ -4,21 +4,24 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата операции|№ док.|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Лицевой счет|Дебет|Кредит|Назначение
+#датаоперации|№док.|видоперации|контрагент|иннконтрагента|бикбанкаконтрагента|лицевойсчет|дебет|кредит|назначение
+#датаоперации|№док.|видоперации|контрагент|иннконтрагента|бикбанкаконтрагента|лицевойсчет|дебет|кредит|назначение|суммавнац.покрытии|курс
+
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_9_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата операции"]
-    df["cpBIC"] = data["БИК банка контрагента"]
+    df["entryDate"] = data["датаоперации"]
+    df["cpBIC"] = data["бикбанкаконтрагента"]
     #df["cpBank"] = data["Контрагент.Банк"]
-    df["cpAcc"] = data["Лицевой счет"]
-    df["cpTaxCode"] = data["ИНН контрагента"]
-    df["cpName"] = data["Контрагент"]
-    df["Debet"] = data["Дебет"]
-    df["Credit"] = data["Кредит"]
-    df["Comment"] = data["Назначение"]
+    df["cpAcc"] = data["лицевойсчет"]
+    df["cpTaxCode"] = data["иннконтрагента"]
+    df["cpName"] = data["контрагент"]
+    df["Debet"] = data["дебет"]
+    df["Credit"] = data["кредит"]
+    df["Comment"] = data["назначение"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
     if len(header.axes[0]) >= 5:

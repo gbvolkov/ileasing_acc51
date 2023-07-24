@@ -4,21 +4,22 @@ import pandas as pd
 from const import COLUMNS
 
 #Документ|Дата операции|Корреспондент.Наименование|Корреспондент.ИНН|Корреспондент.Счет|Корреспондент.БИК|Вх.остаток|Оборот Дт|Оборот Кт|Назначение платежа
+#документ|датаоперации|корреспондент.наименование|корреспондент.инн|корреспондент.счет|корреспондент.бик|вх.остаток|оборотдт|обороткт|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_31_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата операции"]
-    df["cpBIC"] = data["Корреспондент.БИК"]
+    df["entryDate"] = data["датаоперации"]
+    df["cpBIC"] = data["корреспондент.бик"]
     #df["cpBank"] = data["Банк корр."]
-    df["cpAcc"] = data["Корреспондент.Счет"]
-    df["cpTaxCode"] = data["Корреспондент.ИНН"]
-    df["cpName"] = data["Корреспондент.Наименование"]
-    df["Debet"] = data['Оборот Дт']
-    df["Credit"] = data['Оборот Кт']
-    df["Comment"] = data["Назначение платежа"]
+    df["cpAcc"] = data["корреспондент.счет"]
+    df["cpTaxCode"] = data["корреспондент.инн"]
+    df["cpName"] = data["корреспондент.наименование"]
+    df["Debet"] = data['оборотдт']
+    df["Credit"] = data['обороткт']
+    df["Comment"] = data["назначениеплатежа"]
 
     if len(header.axes[0]) >= 3:
         acc = header[header.iloc[:,0].fillna("").str.startswith('Выписка по счету')].dropna(axis=1,how='all')

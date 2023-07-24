@@ -4,22 +4,23 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата док.|№ док.|Дата операции|ВО|Название корр.|ИНН корр.|БИК банка корр.|Счет корр.|Дебет|Кредит|Назначение
+#датадок.|№док.|датаоперации|во|названиекорр.|иннкорр.|бикбанкакорр.|счеткорр.|дебет|кредит|назначение
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_21_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата операции"]
+    df["entryDate"] = data["датаоперации"]
 
-    df["cpBIC"] = data["БИК банка корр."]
+    df["cpBIC"] = data["бикбанкакорр."]
     #df["cpBank"] = data.apply(lambda row: row['Наименование Банка плательщика'] if pd.isna(row['Дебет']) else row['Наименование банка получателя'], axis=1)
-    df["cpAcc"] = data["Счет корр."]
-    df["cpTaxCode"] = data["ИНН корр."]
-    df["cpName"] = data["Название корр."]
-    df["Debet"] = data['Дебет']
-    df["Credit"] = data['Кредит']
-    df["Comment"] = data["Назначение"]
+    df["cpAcc"] = data["счеткорр."]
+    df["cpTaxCode"] = data["иннкорр."]
+    df["cpName"] = data["названиекорр."]
+    df["Debet"] = data['дебет']
+    df["Credit"] = data['кредит']
+    df["Comment"] = data["назначение"]
 
     if len(header.axes[0]) >= 4:
         df["clientAcc"] = header.iloc[3,0]

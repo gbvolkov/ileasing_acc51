@@ -5,22 +5,21 @@ from const import COLUMNS
 
 #Дата док-та|Номер док-та|Корреспондент.Банк|Корреспондент.Счет|Корреспондент.Наименование|Вид опер.|Обороты.подебету|Обороты.покредиту|Назначение платежа
 #Дата док-та|Номер док-та|Корреспондент.Банк|Корреспондент.Счет|Корреспондент.Наименование|Вид опер.|Обороты.по дебету|Обороты.по кредиту|Назначение платежа
+#датадок-та|номердок-та|корреспондент.банк|корреспондент.счет|корреспондент.наименование|видопер.|обороты.подебету|обороты.покредиту|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_34_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    if "Обороты.по дебету" in data.columns:
-        data.rename(columns={"Обороты.по дебету": "Обороты.подебету", "Обороты.по кредиту": "Обороты.покредиту"})
-    df["entryDate"] = data["Дата док-та"]
+    df["entryDate"] = data["датадок-та"]
     #df["cpBIC"] = data["Корреспондент.БИК"]
-    df["cpBank"] = data["Корреспондент.Банк"]
-    df["cpAcc"] = data["Корреспондент.Счет"]
-    df["cpName"] = data["Корреспондент.Наименование"]
-    df["Debet"] = data['Обороты.подебету']
-    df["Credit"] = data['Обороты.покредиту']
-    df["Comment"] = data["Назначение платежа"]
+    df["cpBank"] = data["корреспондент.банк"]
+    df["cpAcc"] = data["корреспондент.счет"]
+    df["cpName"] = data["корреспондент.наименование"]
+    df["Debet"] = data['обороты.подебету']
+    df["Credit"] = data['обороты.покредиту']
+    df["Comment"] = data["назначениеплатежа"]
 
     #acc = header[header.iloc[:,0].fillna("").str.startswith('Выписка по счету')].dropna(axis=1,how='all')
     #if acc.size > 0:

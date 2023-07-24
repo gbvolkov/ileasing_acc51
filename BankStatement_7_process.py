@@ -4,6 +4,7 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата проводки|Счет.Дебет|Счет.Кредит|Сумма по дебету|Сумма по кредиту|№ документа|ВО|Банк (БИК и наименование)|Назначение платежа
+#датапроводки|счет.дебет|счет.кредит|суммаподебету|суммапокредиту|№документа|во|банк(бикинаименование)|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -11,16 +12,16 @@ def BankStatement_7_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
 
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата проводки"]
+    df["entryDate"] = data["датапроводки"]
     #df["cpBIC"] = data["БИК банка контрагента"]
-    df["cpBank"] = data["Банк (БИК и наименование)"]
+    df["cpBank"] = data["банк(бикинаименование)"]
     #df["cpAcc"] = data["Счёт контрагента"]
-    df["cpAcc"] = data.apply(lambda row: row['Счет.Дебет'] if pd.isna(row['Сумма по дебету']) else row['Счет.Кредит'], axis=1)
+    df["cpAcc"] = data.apply(lambda row: row['счет.дебет'] if pd.isna(row['суммаподебету']) else row['счет.кредит'], axis=1)
     #df["cpTaxCode"] = data["ИНН контрагента"]
     #df["cpName"] = data["Контрагент"]
-    df["Debet"] = data["Сумма по дебету"]
-    df["Credit"] = data["Сумма по кредиту"]
-    df["Comment"] = data["Назначение платежа"]
+    df["Debet"] = data["суммаподебету"]
+    df["Credit"] = data["суммапокредиту"]
+    df["Comment"] = data["назначениеплатежа"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
     if len(header.axes[0]) >= 1:

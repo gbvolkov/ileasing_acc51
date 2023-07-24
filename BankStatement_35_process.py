@@ -4,27 +4,28 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата проводки|№ документа|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Корреспондент.БИК|Корреспондент.Банк|Корреспондент.Счет|Корреспондент.ИНН|Корреспондент.Наименование|В О|Назначение платежа|Обороты.Дебет|Обороты.Кредит|Референс проводки
+#датапроводки|№документа|клиент.инн|клиент.наименование|клиент.счет|корреспондент.бик|корреспондент.банк|корреспондент.счет|корреспондент.инн|корреспондент.наименование|во|назначениеплатежа|обороты.дебет|обороты.кредит|референспроводки
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_35_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата проводки"]
-    df["cpBIC"] = data["Корреспондент.БИК"]
-    df["cpBank"] = data["Корреспондент.Банк"]
-    df["cpAcc"] = data["Корреспондент.Счет"]
-    df["cpTaxCode"] = data["Корреспондент.ИНН"]
-    df["cpName"] = data["Корреспондент.Наименование"]
-    df["Debet"] = data['Обороты.Дебет']
-    df["Credit"] = data['Обороты.Кредит']
-    df["Comment"] = data["Назначение платежа"]
+    df["entryDate"] = data["датапроводки"]
+    df["cpBIC"] = data["корреспондент.бик"]
+    df["cpBank"] = data["корреспондент.банк"]
+    df["cpAcc"] = data["корреспондент.счет"]
+    df["cpTaxCode"] = data["корреспондент.инн"]
+    df["cpName"] = data["корреспондент.наименование"]
+    df["Debet"] = data['обороты.дебет']
+    df["Credit"] = data['обороты.кредит']
+    df["Comment"] = data["назначениеплатежа"]
 
     #df["clientBIC"] = header.iloc[1,0]
     #df["clientBank"] = header.iloc[1,0]
-    df["clientAcc"] = data["Клиент.Счет"]
-    df["clientName"] = data["Клиент.Наименование"]
-    df["clientTaxCode"] = data["Клиент.ИНН"]
+    df["clientAcc"] = data["клиент.счет"]
+    df["clientName"] = data["клиент.наименование"]
+    df["clientTaxCode"] = data["клиент.инн"]
 
     if len(header.axes[0]) >= 1:
         obalance = header[header.iloc[:,0].fillna("").str.startswith('Входящий остаток')].dropna(axis=1,how='all')

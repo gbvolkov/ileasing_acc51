@@ -4,15 +4,16 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата|Вид (шифр) операции (ВО)|Номер документа Банка|Номер документа|БИК банка корреспондента|Корреспондирующий счет|Сумма по дебету|Сумма по кредиту
+#дата|вид(шифр)операции(во)|номердокументабанка|номердокумента|бикбанкакорреспондента|корреспондирующийсчет|суммаподебету|суммапокредиту
 def BankStatement_2_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
 
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата"]
-    df["cpBIC"] = data["БИК банка корреспондента"]
-    df["cpAcc"] = data["Корреспондирующий счет"]
-    df["Debet"] = data["Сумма по дебету"]
-    df["Credit"] = data["Сумма по кредиту"]
+    df["entryDate"] = data["дата"]
+    df["cpBIC"] = data["бикбанкакорреспондента"]
+    df["cpAcc"] = data["корреспондирующийсчет"]
+    df["Debet"] = data["суммаподебету"]
+    df["Credit"] = data["суммапокредиту"]
 
     #header: За период с 1 декабря 2019 г. по 30 ноября 2020 г.,,,,,
     if len(header.axes[0]) >= 1:

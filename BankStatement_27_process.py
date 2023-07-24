@@ -5,21 +5,22 @@ from const import COLUMNS
 
 #Номер строки|Дата проводки|Вид операции|Номер документа клиента|Номер документа банка (Номер документа в СМФР)|Счет плательщика/получателя|Сумма Дебет|Сумма Кредит|Назначение платежа
 #Номер строки|Дата проводки|Вид операции|Номер документа клиента|Номер документа банка (Номер документа в СМФР)|Счет плательщика/получателя|Наименование корреспондирующего счета|Сумма Дебет|Сумма Кредит|Назначение платежа
+#номерстроки|датапроводки|видоперации|номердокументаклиента|номердокументабанка(номердокументавсмфр)|счетплательщика/получателя|суммадебет|суммакредит|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_27_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата проводки"]
+    df["entryDate"] = data["датапроводки"]
     #df["cpBIC"] = data["БИК банка корр."]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["Счет плательщика/получателя"]
-    if "Наименование корреспондирующего счета" in data.columns:
-        df["cpName"] = data["Наименование корреспондирующего счета"]
-    df["Debet"] = data['Сумма Дебет']
-    df["Credit"] = data['Сумма Кредит']
-    df["Comment"] = data["Назначение платежа"]
+    df["cpAcc"] = data["счетплательщика/получателя"]
+    if "наименованиекорреспондирующегосчета" in data.columns:
+        df["cpName"] = data["наименованиекорреспондирующегосчета"]
+    df["Debet"] = data['суммадебет']
+    df["Credit"] = data['суммакредит']
+    df["Comment"] = data["назначениеплатежа"]
 
     if len(header.axes[0]) >= 1:
         acc = header[header.iloc[:,0].fillna("").str.startswith('Счет:')].dropna(axis=1,how='all')

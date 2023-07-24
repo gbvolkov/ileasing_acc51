@@ -5,22 +5,24 @@ from const import COLUMNS
 
 #Дата|№ док.|ВО|Название корр.|ИНН контрагента|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение
 #Дата|№ док.|ВО|Название корр.|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение
-#COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
+#дата|№док.|во|названиекорр.|бикбанкакорр.|лицевойсчет|дебет|кредит|назначение
+#дата|№док.|во|названиекорр.|иннконтрагента|бикбанкакорр.|лицевойсчет|дебет|кредит|назначение
+# COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_22_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата"]
-    df["cpBIC"] = data["БИК банка корр."]
+    df["entryDate"] = data["дата"]
+    df["cpBIC"] = data["бикбанкакорр."]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["Лицевой счет"]
-    if "ИНН контрагента" in data.columns:
-        df["cpTaxCode"] = data["ИНН контрагента"]
-    df["cpName"] = data["Название корр."]
-    df["Debet"] = data['Дебет']
-    df["Credit"] = data['Кредит']
-    df["Comment"] = data["Назначение"]
+    df["cpAcc"] = data["лицевойсчет"]
+    if "иннконтрагента" in data.columns:
+        df["cpTaxCode"] = data["иннконтрагента"]
+    df["cpName"] = data["названиекорр."]
+    df["Debet"] = data['дебет']
+    df["Credit"] = data['кредит']
+    df["Comment"] = data["назначение"]
 
     if len(header.axes[0]) >= 5:
         df["clientAcc"] = header.iloc[3,0]

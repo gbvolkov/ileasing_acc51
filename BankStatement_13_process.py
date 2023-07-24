@@ -4,6 +4,7 @@ import pandas as pd
 from const import COLUMNS
 
 #Документ|Дата операции|Корреспондент.Наименование|Корреспондент.ИНН|Корреспондент.КПП|Корреспондент.Счет|Корреспондент.БИК|Вх.остаток|Оборот Дт|Оборот Кт|Назначение платежа
+#документ|датаоперации|корреспондент.наименование|корреспондент.инн|корреспондент.кпп|корреспондент.счет|корреспондент.бик|вх.остаток|оборотдт|обороткт|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -11,15 +12,15 @@ def BankStatement_13_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     # sourcery skip: extract-method
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата операции"]
-    df["cpBIC"] = data["Корреспондент.БИК"]
+    df["entryDate"] = data["датаоперации"]
+    df["cpBIC"] = data["корреспондент.бик"]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["Корреспондент.Счет"]
-    df["cpTaxCode"] = data["Корреспондент.ИНН"]
-    df["cpName"] = data["Корреспондент.Наименование"]
-    df["Debet"] = data["Оборот Дт"]
-    df["Credit"] = data["Оборот Кт"]
-    df["Comment"] = data["Назначение платежа"]
+    df["cpAcc"] = data["корреспондент.счет"]
+    df["cpTaxCode"] = data["корреспондент.инн"]
+    df["cpName"] = data["корреспондент.наименование"]
+    df["Debet"] = data["оборотдт"]
+    df["Credit"] = data["обороткт"]
+    df["Comment"] = data["назначениеплатежа"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
 

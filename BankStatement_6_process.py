@@ -4,6 +4,7 @@ import pandas as pd
 from const import COLUMNS
 
 #"Номер документа|Дата документа|Дата операции|Счёт|Контрагент|ИНН контрагента|БИК банка контрагента|Корр.счёт банка контрагента|Наименование банка контрагента|Счёт контрагента|Списание|Зачисление|Назначение платежа
+#номердокумента|датадокумента|датаоперации|счет|контрагент|иннконтрагента|бикбанкаконтрагента|корр.счетбанкаконтрагента|наименованиебанкаконтрагента|счётконтрагента|списание|зачисление|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -11,18 +12,18 @@ def BankStatement_6_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
 
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата документа"]
-    df["cpBIC"] = data["БИК банка контрагента"]
-    df["cpBank"] = data["Наименование банка контрагента"]
-    df["cpAcc"] = data["Счёт контрагента"]
-    df["cpTaxCode"] = data["ИНН контрагента"]
-    df["cpName"] = data["Контрагент"]
-    df["Debet"] = data["Списание"]
-    df["Credit"] = data["Зачисление"]
-    df["Comment"] = data["Назначение платежа"]
+    df["entryDate"] = data["датадокумента"]
+    df["cpBIC"] = data["бикбанкаконтрагента"]
+    df["cpBank"] = data["наименованиебанкаконтрагента"]
+    df["cpAcc"] = data["счетконтрагента"]
+    df["cpTaxCode"] = data["иннконтрагента"]
+    df["cpName"] = data["контрагент"]
+    df["Debet"] = data["списание"]
+    df["Credit"] = data["зачисление"]
+    df["Comment"] = data["назначениеплатежа"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
-    df["clientAcc"] = data["Счёт"]
+    df["clientAcc"] = data["счет"]
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"

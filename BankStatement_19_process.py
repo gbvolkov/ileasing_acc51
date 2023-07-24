@@ -4,21 +4,22 @@ import pandas as pd
 from const import COLUMNS
 
 #Номер|Номер счёта|Дата|Контрагент cчёт|Контрагент|Поступление|Валюта|Списание|Валюта|Назначение
+#номер|номерсчета|дата|контрагентcчет|контрагент|поступление|валюта|списание|валюта|назначение
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_19_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата"]
+    df["entryDate"] = data["дата"]
     #df["cpBIC"] = data["Реквизиты банка плательщика/получателя денежных средств.БИК"]
     #df["cpBank"] = data["Реквизиты банка плательщика/получателя денежных средств.наименование"]
-    df["cpAcc"] = data["Контрагент cчёт"]
+    df["cpAcc"] = data["контрагентcчет"]
     #df["cpTaxCode"] = data["Реквизиты плательщика/получателя денежных средств.ИНН/КИО"]
-    df["cpName"] = data["Контрагент"]
-    df["Debet"] = data['Списание']
-    df["Credit"] = data['Поступление']
-    df["Comment"] = data["Назначение"]
+    df["cpName"] = data["контрагент"]
+    df["Debet"] = data['списание']
+    df["Credit"] = data['поступление']
+    df["Comment"] = data["назначение"]
 
     if len(header.axes[0]) >= 1:
         df["clientName"] = header.iloc[0,0]

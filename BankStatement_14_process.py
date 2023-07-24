@@ -4,6 +4,7 @@ import pandas as pd
 from const import COLUMNS
 
 #Тип|Дата|Номер|Вид операции|Сумма|Валюта|Основание платежа|БИК Банка получателя|Счет Получателя|Наименование Получателя
+#тип|дата|номер|видоперации|сумма|валюта|основаниеплатежа|бикбанкаполучателя|счетполучателя|наименованиеполучателя
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -14,18 +15,18 @@ def BankStatement_14_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
         header = data.iloc[:2]
         data = data.iloc[2:]
 
-    df["entryDate"] = data["Дата"]
-    df["cpBIC"] = data["БИК Банка получателя"]
+    df["entryDate"] = data["дата"]
+    df["cpBIC"] = data["бикбанкаполучателя"]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["Счет Получателя"]
+    df["cpAcc"] = data["счетполучателя"]
     #df["cpTaxCode"] = data["Корреспондент.ИНН"]
-    df["cpName"] = data["Наименование Получателя"]
+    df["cpName"] = data["наименованиеполучателя"]
     
     #>0 credit, < 0 debet
-    df["Debet"] = data.apply(lambda row: row['Сумма'] if str(row['Сумма']).startswith('-') else '0.00', axis=1)
-    df["Credit"] = data.apply(lambda row: '0.00' if str(row['Сумма']).startswith('-') else row['Сумма'], axis=1)
+    df["Debet"] = data.apply(lambda row: row['сумма'] if str(row['сумма']).startswith('-') else '0.00', axis=1)
+    df["Credit"] = data.apply(lambda row: '0.00' if str(row['сумма']).startswith('-') else row['сумма'], axis=1)
 
-    df["Comment"] = data["Основание платежа"]
+    df["Comment"] = data["основаниеплатежа"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
 

@@ -4,21 +4,22 @@ import pandas as pd
 from const import COLUMNS
 
 #Дата|№ док.|ВО|БИК банка контрагента|Банк контрагента|ИНН контрагента|Контрагент|Счет контрагента|Дебет|Кредит|Назначение платежа
+#дата|№док.|во|бикбанкаконтрагента|банкконтрагента|иннконтрагента|контрагент|счетконтрагента|дебет|кредит|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_32_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["Дата"]
-    df["cpBIC"] = data["БИК банка контрагента"]
-    df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["Счет контрагента"]
-    df["cpTaxCode"] = data["ИНН контрагента"]
-    df["cpName"] = data["Контрагент"]
-    df["Debet"] = data['Дебет']
-    df["Credit"] = data['Кредит']
-    df["Comment"] = data["Назначение платежа"]
+    df["entryDate"] = data["дата"]
+    df["cpBIC"] = data["бикбанкаконтрагента"]
+    df["cpBank"] = data["банкконтрагента"]
+    df["cpAcc"] = data["счетконтрагента"]
+    df["cpTaxCode"] = data["иннконтрагента"]
+    df["cpName"] = data["контрагент"]
+    df["Debet"] = data['дебет']
+    df["Credit"] = data['кредит']
+    df["Comment"] = data["назначениеплатежа"]
 
     if len(header.axes[0]) >= 1:
         acc = header[header.iloc[:,0] == 'Счет'].dropna(axis=1,how='all')
