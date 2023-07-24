@@ -57,7 +57,6 @@ from BankStatement_34_process import BankStatement_34_process
 from BankStatement_35_process import BankStatement_35_process
 from BankStatement_36_process import BankStatement_36_process
 
-
 def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     datatype = "|".join(data.columns).replace('\n', ' ')
     DATATYPES.append(datatype)
@@ -495,7 +494,7 @@ def getArguments():
     parser.add_argument("-o", "--output", default="./data/test_parsed_statements", help="Resulting file name (no extension)")
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
-    parser.add_argument("--pdf", default=False, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
+    parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
     parser.add_argument("--excel", default=True, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
     return vars(parser.parse_args())
 

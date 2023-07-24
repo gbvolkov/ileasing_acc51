@@ -18,7 +18,8 @@ def BankStatement_5_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
     df["entryDate"] = data["дата"]
     df["cpBIC"] = data["контрагент.бик"]
     df["cpBank"] = data["контрагент.наименованиебанка"]
-    df["cpAcc"] = data["контрагент.счет"]
+    if "контрагент.счет" in data.columns:
+        df["cpAcc"] = data["контрагент.счет"]
     #df["cpAcc"] = data["Реквизиты корреспондента.Счет"]
     df["cpTaxCode"] = data["контрагент.инн"]
     df["cpName"] = data["контрагент.наименование"]

@@ -35,9 +35,9 @@ def BankStatement_18_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
 
     if len(footer.axes[0]) >= 4:
         df["openBalance"] = footer.iloc[3,0]
-        df["closingBalance"] = footer.iloc[3,6]
-        df["totalDebet"] = footer.iloc[3,2]
-        df["totalCredit"] = footer.iloc[3,3]
+        df["closingBalance"] = footer.iloc[3,3]
+        df["totalDebet"] = footer.iloc[3,1]
+        df["totalCredit"] = footer.iloc[3,2]
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"
