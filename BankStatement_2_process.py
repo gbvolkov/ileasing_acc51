@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата|Вид (шифр) операции (ВО)|Номер документа Банка|Номер документа|БИК банка корреспондента|Корреспондирующий счет|Сумма по дебету|Сумма по кредиту
-#дата|вид(шифр)операции(во)|номердокументабанка|номердокумента|бикбанкакорреспондента|корреспондирующийсчет|суммаподебету|суммапокредиту
+#дата|видшифроперацииво|номердокументабанка|номердокумента|бикбанкакорреспондента|корреспондирующийсчет|суммаподебету|суммапокредиту
 def BankStatement_2_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
 
     df = pd.DataFrame(columns = COLUMNS)

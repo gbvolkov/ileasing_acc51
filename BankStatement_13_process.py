@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Документ|Дата операции|Корреспондент.Наименование|Корреспондент.ИНН|Корреспондент.КПП|Корреспондент.Счет|Корреспондент.БИК|Вх.остаток|Оборот Дт|Оборот Кт|Назначение платежа
-#документ|датаоперации|корреспондент.наименование|корреспондент.инн|корреспондент.кпп|корреспондент.счет|корреспондент.бик|вх.остаток|оборотдт|обороткт|назначениеплатежа
+#документ|датаоперации|корреспондентнаименование|корреспондентинн|корреспонденткпп|корреспондентсчет|корреспондентбик|вхостаток|оборотдт|обороткт|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -13,11 +12,11 @@ def BankStatement_13_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["датаоперации"]
-    df["cpBIC"] = data["корреспондент.бик"]
+    df["cpBIC"] = data["корреспондентбик"]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["корреспондент.счет"]
-    df["cpTaxCode"] = data["корреспондент.инн"]
-    df["cpName"] = data["корреспондент.наименование"]
+    df["cpAcc"] = data["корреспондентсчет"]
+    df["cpTaxCode"] = data["корреспондентинн"]
+    df["cpName"] = data["корреспондентнаименование"]
     df["Debet"] = data["оборотдт"]
     df["Credit"] = data["обороткт"]
     df["Comment"] = data["назначениеплатежа"]

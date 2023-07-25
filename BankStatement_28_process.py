@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата и время проводки|Вход остаток|Дебет|Кредит|Исходящий остаток|Док.|Наименование корреспондента|ИНН корреспондента|Назначение платежа
-#датаивремяпроводки|входостаток|дебет|кредит|исходящийостаток|док.|наименованиекорреспондента|иннкорреспондента|назначениеплатежа
+#датаивремяпроводки|входостаток|дебет|кредит|исходящийостаток|док|наименованиекорреспондента|иннкорреспондента|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]

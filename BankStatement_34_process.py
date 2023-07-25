@@ -3,22 +3,20 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата док-та|Номер док-та|Корреспондент.Банк|Корреспондент.Счет|Корреспондент.Наименование|Вид опер.|Обороты.подебету|Обороты.покредиту|Назначение платежа
-#Дата док-та|Номер док-та|Корреспондент.Банк|Корреспондент.Счет|Корреспондент.Наименование|Вид опер.|Обороты.по дебету|Обороты.по кредиту|Назначение платежа
-#датадок-та|номердок-та|корреспондент.банк|корреспондент.счет|корреспондент.наименование|видопер.|обороты.подебету|обороты.покредиту|назначениеплатежа
+#датадокта|номердокта|корреспондентбанк|корреспондентсчет|корреспондентнаименование|видопер|оборотыподебету|оборотыпокредиту|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_34_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["датадок-та"]
+    df["entryDate"] = data["датадокта"]
     #df["cpBIC"] = data["Корреспондент.БИК"]
-    df["cpBank"] = data["корреспондент.банк"]
-    df["cpAcc"] = data["корреспондент.счет"]
-    df["cpName"] = data["корреспондент.наименование"]
-    df["Debet"] = data['обороты.подебету']
-    df["Credit"] = data['обороты.покредиту']
+    df["cpBank"] = data["корреспондентбанк"]
+    df["cpAcc"] = data["корреспондентсчет"]
+    df["cpName"] = data["корреспондентнаименование"]
+    df["Debet"] = data['оборотыподебету']
+    df["Credit"] = data['оборотыпокредиту']
     df["Comment"] = data["назначениеплатежа"]
 
     #acc = header[header.iloc[:,0].fillna("").str.startswith('Выписка по счету')].dropna(axis=1,how='all')

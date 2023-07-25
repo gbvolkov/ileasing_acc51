@@ -1,0 +1,29 @@
+from datetime import datetime
+from io import TextIOWrapper
+import pandas as pd
+from const import COLUMNS
+
+#no|датаоперации|nдокумента|шифрдокумента|бикбанкакорреспондента|наименованиекорреспондента|nсчетакорреспондента|дебет|кредит|суммавнацпокрытии|назначениеплатежа
+#COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
+#           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
+#           "filename"]
+def BankStatement_46_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+    
+    df = pd.DataFrame(columns = COLUMNS)
+
+    df["entryDate"] = data["датаоперации"]
+    df["cpBIC"] = data["бикбанкакорреспондента"]
+    #df["cpBank"] = data["контрагент.банк(бик,наименование)"]
+    df["cpAcc"] = data["nсчетакорреспондента"]
+    #df["cpTaxCode"] = data["иннконтрагента"]
+    df["cpName"] = data["наименованиекорреспондента"]
+
+    df["Debet"] = data["дебет"]
+    df["Credit"] = data["кредит"]
+    df["Comment"] = data["назначениеплатежа"]
+
+    df["clientID"] = clientid
+    df["filename"] = f"{inname}_{sheet}"
+    df['processdate'] = datetime.now()
+    
+    return df

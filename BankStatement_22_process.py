@@ -3,10 +3,9 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата|№ док.|ВО|Название корр.|ИНН контрагента|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение
-#Дата|№ док.|ВО|Название корр.|БИК банка корр.|Лицевой счет|Дебет|Кредит|Назначение
-#дата|№док.|во|названиекорр.|бикбанкакорр.|лицевойсчет|дебет|кредит|назначение
-#дата|№док.|во|названиекорр.|иннконтрагента|бикбанкакорр.|лицевойсчет|дебет|кредит|назначение
+#дата|nдок|во|названиекорр|иннконтрагента|бикбанкакорр|лицевойсчет|дебет|кредит|назначение
+#дата|nдок|во|названиекорр|бикбанкакорр|лицевойсчет|дебет|кредит|назначение
+#дата|nдок|во|бикбанкакорр|названиекорр|лицевойсчет|дебет|кредит|назначение
 # COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -14,12 +13,12 @@ def BankStatement_22_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["дата"]
-    df["cpBIC"] = data["бикбанкакорр."]
+    df["cpBIC"] = data["бикбанкакорр"]
     #df["cpBank"] = data["Банк контрагента"]
     df["cpAcc"] = data["лицевойсчет"]
     if "иннконтрагента" in data.columns:
         df["cpTaxCode"] = data["иннконтрагента"]
-    df["cpName"] = data["названиекорр."]
+    df["cpName"] = data["названиекорр"]
     df["Debet"] = data['дебет']
     df["Credit"] = data['кредит']
     df["Comment"] = data["назначение"]

@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#№ документа|Дата|БИК|№ Счёта|Деб. оборот|Кред. оборот|ИНН и наименование получателя|Назначение платежа
-#№документа|дата|бик|№счета|деб.оборот|кред.оборот|иннинаименованиеполучателя|назначениеплатежа
+#nдокумента|дата|бик|nсчета|дебоборот|кредоборот|иннинаименованиеполучателя|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -14,11 +13,11 @@ def BankStatement_16_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["entryDate"] = data["дата"]
     df["cpBIC"] = data["бик"]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["№счета"]
+    df["cpAcc"] = data["nсчета"]
     #df["cpTaxCode"] = data["Корреспондент.ИНН"]
     df["cpName"] = data["иннинаименованиеполучателя"]
-    df["Debet"] = data['деб.оборот']
-    df["Credit"] = data['кред.оборот']
+    df["Debet"] = data['дебоборот']
+    df["Credit"] = data['кредоборот']
     df["Comment"] = data["назначениеплатежа"]
 
     if len(header.axes[0]) >= 2:

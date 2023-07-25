@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата|№|Клиент.ИНН|Клиент.Наименование|Клиент.Счет|Корреспондент.БИК|Корреспондент.Счет|Корреспондент.Наименование|В О|Содержание|Обороты.Дебет|Обороты.Кредит
-#дата|№|клиент.инн|клиент.наименование|клиент.счет|корреспондент.бик|корреспондент.счет|корреспондент.наименование|во|содержание|обороты.дебет|обороты.кредит
+#дата|n|клиентинн|клиентнаименование|клиентсчет|корреспондентбик|корреспондентсчет|корреспондентнаименование|во|содержание|оборотыдебет|оборотыкредит
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -12,20 +11,20 @@ def BankStatement_24_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["дата"]
-    df["cpBIC"] = data["корреспондент.бик"]
+    df["cpBIC"] = data["корреспондентбик"]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["корреспондент.счет"]
+    df["cpAcc"] = data["корреспондентсчет"]
     #df["cpTaxCode"] = data["Реквизиты плательщика/получателя денежных средств.ИНН/КИО"]
-    df["cpName"] = data["корреспондент.наименование"]
-    df["Debet"] = data['обороты.дебет']
-    df["Credit"] = data['обороты.кредит']
+    df["cpName"] = data["корреспондентнаименование"]
+    df["Debet"] = data['оборотыдебет']
+    df["Credit"] = data['оборотыкредит']
     df["Comment"] = data["содержание"]
 
     #df["clientBIC"] = header.iloc[1,0]
     #df["clientBank"] = header.iloc[1,0]
-    df["clientAcc"] = data["клиент.счет"]
-    df["clientName"] = data["клиент.наименование"]
-    df["clientTaxCode"] = data["клиент.инн"]
+    df["clientAcc"] = data["клиентсчет"]
+    df["clientName"] = data["клиентнаименование"]
+    df["clientTaxCode"] = data["клиентинн"]
 
     if len(header.axes[0]) >= 1:
         obalance = header[header.iloc[:,0].fillna("").str.startswith('Входящий остаток')].dropna(axis=1,how='all')

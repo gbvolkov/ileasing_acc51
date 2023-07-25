@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата проводки|ВО|N док|Банк корр.|Корреспондент|Счет контрагента|Дебет|Кредит|Назначение платежа
-#датапроводки|во|nдок|банккорр.|корреспондент|счетконтрагента|дебет|кредит|назначениеплатежа
+#датапроводки|во|nдок|банккорр|корреспондент|счетконтрагента|дебет|кредит|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -13,7 +12,7 @@ def BankStatement_30_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
 
     df["entryDate"] = data["датапроводки"]
     #df["cpBIC"] = data["БИК банка корр."]
-    df["cpBank"] = data["банккорр."]
+    df["cpBank"] = data["банккорр"]
     df["cpAcc"] = data["счетконтрагента"]
     #df["cpTaxCode"] = data["Корреспондент.ИНН"]
     df["cpName"] = data["корреспондент"]

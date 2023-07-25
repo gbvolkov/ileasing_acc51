@@ -3,23 +3,22 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#№ П/П|Дата операции / Posting date|Дата валютир. / Value|Вид опер. / Op. type|Номер документа / Document number|Реквизиты корреспондента /Counter party details.Наименование / Name|Реквизиты корреспондента /Counter party details.Счет / Account|Реквизиты корреспондента /Counter party details.Банк / Bank|Дебет / Debit|Кредит / Credit|Основание операции (назначение платежа) / Payment details
-#№п/п|датаоперации/postingdate|датавалютир./value|видопер./op.type|номердокумента/documentnumber|реквизитыкорреспондента/counterpartydetails.наименование/name|реквизитыкорреспондента/counterpartydetails.счет/account|реквизитыкорреспондента/counterpartydetails.банк/bank|дебет/debit|кредит/credit|основаниеоперации(назначениеплатежа)/paymentdetails
+#nпп|датаоперацииpostingdate|датавалютирvalue|видоперoptype|номердокументаdocumentnumber|реквизитыкорреспондентаcounterpartydetailsнаименованиеname|реквизитыкорреспондентаcounterpartydetailsсчетaccount|реквизитыкорреспондентаcounterpartydetailsбанкbank|дебетdebit|кредитcredit|основаниеоперацииназначениеплатежаpaymentdetails
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
 def BankStatement_15_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
-    df["entryDate"] = data["датаоперации/postingdate"]
-    df["cpBIC"] = data["реквизитыкорреспондента/counterpartydetails.банк/bank"]
+    df["entryDate"] = data["датаоперацииpostingdate"]
+    df["cpBIC"] = data["реквизитыкорреспондентаcounterpartydetailsбанкbank"]
     #df["cpBank"] = data["Банк контрагента"]
-    df["cpAcc"] = data["реквизитыкорреспондента/counterpartydetails.счет/account"]
+    df["cpAcc"] = data["реквизитыкорреспондентаcounterpartydetailsсчетaccount"]
     #df["cpTaxCode"] = data["Корреспондент.ИНН"]
-    df["cpName"] = data["реквизитыкорреспондента/counterpartydetails.наименование/name"]
-    df["Debet"] = data['дебет/debit']
-    df["Credit"] = data['кредит/credit']
-    df["Comment"] = data["основаниеоперации(назначениеплатежа)/paymentdetails"]
+    df["cpName"] = data["реквизитыкорреспондентаcounterpartydetailsнаименованиеname"]
+    df["Debet"] = data['дебетdebit']
+    df["Credit"] = data['кредитcredit']
+    df["Comment"] = data["основаниеоперацииназначениеплатежаpaymentdetails"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,
 

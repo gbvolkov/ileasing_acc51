@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата|Номер|Вид операции|Контрагент|ИНН контрагента|БИК банка контрагента|Счет контрагента|Дебет, RUR|Кредит, RUR|Назначение
-#дата|номер|видоперации|контрагент|иннконтрагента|бикбанкаконтрагента|счетконтрагента|дебет,rur|кредит,rur|назначение
+#дата|номер|видоперации|контрагент|иннконтрагента|бикбанкаконтрагента|счетконтрагента|дебетrur|кредитrur|назначение
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -17,8 +16,8 @@ def BankStatement_11_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["cpAcc"] = data["счетконтрагента"]
     df["cpTaxCode"] = data["иннконтрагента"]
     df["cpName"] = data["контрагент"]
-    df["Debet"] = data["дебет,rur"]
-    df["Credit"] = data["кредит,rur"]
+    df["Debet"] = data["дебетrur"]
+    df["Credit"] = data["кредитrur"]
     df["Comment"] = data["назначение"]
 
     #header: За период,c 22.06.2020 по 22.06.2021,,,,

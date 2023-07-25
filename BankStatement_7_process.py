@@ -3,8 +3,7 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата проводки|Счет.Дебет|Счет.Кредит|Сумма по дебету|Сумма по кредиту|№ документа|ВО|Банк (БИК и наименование)|Назначение платежа
-#датапроводки|счет.дебет|счет.кредит|суммаподебету|суммапокредиту|№документа|во|банк(бикинаименование)|назначениеплатежа
+#датапроводки|счетдебет|счеткредит|суммаподебету|суммапокредиту|nдокумента|во|банкбикинаименование|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -13,10 +12,8 @@ def BankStatement_7_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["датапроводки"]
-    #df["cpBIC"] = data["БИК банка контрагента"]
-    df["cpBank"] = data["банк(бикинаименование)"]
-    #df["cpAcc"] = data["Счёт контрагента"]
-    df["cpAcc"] = data.apply(lambda row: row['счет.дебет'] if pd.isna(row['суммаподебету']) else row['счет.кредит'], axis=1)
+    df["cpBank"] = data["банкбикинаименование"]
+    df["cpAcc"] = data.apply(lambda row: row['счетдебет'] if pd.isna(row['суммаподебету']) else row['счеткредит'], axis=1)
     #df["cpTaxCode"] = data["ИНН контрагента"]
     #df["cpName"] = data["Контрагент"]
     df["Debet"] = data["суммаподебету"]
