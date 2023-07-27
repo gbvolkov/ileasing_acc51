@@ -3,19 +3,21 @@ from io import TextIOWrapper
 import pandas as pd
 from const import COLUMNS
 
-#Дата|№ док.|ВО|Банк контрагента|Контрагент|Счет контрагента|Дебет|Кредит|Назначение платежа
-#дата|№док.|во|банкконтрагента|контрагент|счетконтрагента|дебет|кредит|назначениеплатежа
+#дата|nдок|во|банкконтрагента|контрагент|счетконтрагента|дебет|кредит|назначениеплатежа
+#дата|no|во|бик|банкконтрагента|контрагент|иннконтрагента|счетконтрагента|дебет|кредит|назначениеплатежа
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
-def BankStatement_17_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+def BankStatement_17_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["дата"]
-    #df["cpBIC"] = data["Реквизиты корреспондента /Counter party details.Банк / Bank"]
+    if "бик" in data.columns:
+        df["cpBIC"] = data["бик"]
     df["cpBank"] = data["банкконтрагента"]
     df["cpAcc"] = data["счетконтрагента"]
-    #df["cpTaxCode"] = data["Корреспондент.ИНН"]
+    if "иннконтрагента" in data.columns:
+        df["cpTaxCode"] = data["иннконтрагента"]
     df["cpName"] = data["контрагент"]
     df["Debet"] = data['дебет']
     df["Credit"] = data['кредит']
@@ -43,8 +45,4 @@ def BankStatement_17_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
         if turnovers.size > 2:
             df["totalCredit"] = turnovers.iloc[:,2].values[0]
 
-    df["clientID"] = clientid
-    df["filename"] = f"{inname}_{sheet}"
-    df['processdate'] = datetime.now()
-    
     return df

@@ -7,7 +7,7 @@ from const import COLUMNS
 #COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
-def BankStatement_21_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+def BankStatement_21_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["датаоперации"]
@@ -41,8 +41,4 @@ def BankStatement_21_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
         if turnovers.size > 2:
             df["totalCredit"] = turnovers.iloc[:,2].values[0]
 
-    df["clientID"] = clientid
-    df["filename"] = f"{inname}_{sheet}"
-    df['processdate'] = datetime.now()
-    
     return df

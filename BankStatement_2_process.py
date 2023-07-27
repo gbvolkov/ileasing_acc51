@@ -4,7 +4,7 @@ import pandas as pd
 from const import COLUMNS
 
 #дата|видшифроперацииво|номердокументабанка|номердокумента|бикбанкакорреспондента|корреспондирующийсчет|суммаподебету|суммапокредиту
-def BankStatement_2_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+def BankStatement_2_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
 
     df = pd.DataFrame(columns = COLUMNS)
 
@@ -36,9 +36,5 @@ def BankStatement_2_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd
         closingbalace = footer[footer.iloc[:,0] == 'Исходящий остаток'].dropna(axis=1,how='all')
         if closingbalace.size > 2:
             df["closingBalance"] = closingbalace.iloc[:,2].values[0]
-
-    df["clientID"] = clientid
-    df["filename"] = f"{inname}_{sheet}"
-    df['processdate'] = datetime.now()
 
     return df

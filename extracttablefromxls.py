@@ -13,22 +13,18 @@ import sys
 from io import TextIOWrapper
 import numpy as np
 import csv
+import re
 
 #using this (type: ignore) since camelot does not have stubs
 import camelot # type: ignore
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextBoxHorizontal, LTTextLineHorizontal
-from BankStatement_41_process import BankStatement_41_process
-from BankStatement_42_process import BankStatement_42_process
-from BankStatement_43_process import BankStatement_43_process
-from BankStatement_44_process import BankStatement_44_process
-from BankStatement_45_process import BankStatement_45_process
-from BankStatement_46_process import BankStatement_46_process
-from BankStatement_47_process import BankStatement_47_process
-from BankStatement_48_process import BankStatement_48_process
-from BankStatement_49_process import BankStatement_49_process
-from BankStatement_50_process import BankStatement_50_process
-from const import COLUMNS, DOCTYPES
+from BankStatement_51_process import BankStatement_51_process
+from BankStatement_52_process import BankStatement_52_process
+from BankStatement_53_process import BankStatement_53_process
+from BankStatement_54_process import BankStatement_54_process
+from BankStatement_55_process import BankStatement_55_process
+from const import COLUMNS, DOCTYPES, REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 from BankStatement_1_process import BankStatement_1_process
 from BankStatement_2_process import BankStatement_2_process
 from BankStatement_3_process import BankStatement_3_process
@@ -69,8 +65,18 @@ from BankStatement_37_process import BankStatement_37_process
 from BankStatement_38_process import BankStatement_38_process
 from BankStatement_39_process import BankStatement_39_process
 from BankStatement_40_process import BankStatement_40_process
+from BankStatement_41_process import BankStatement_41_process
+from BankStatement_42_process import BankStatement_42_process
+from BankStatement_43_process import BankStatement_43_process
+from BankStatement_44_process import BankStatement_44_process
+from BankStatement_45_process import BankStatement_45_process
+from BankStatement_46_process import BankStatement_46_process
+from BankStatement_47_process import BankStatement_47_process
+from BankStatement_48_process import BankStatement_48_process
+from BankStatement_49_process import BankStatement_49_process
+from BankStatement_50_process import BankStatement_50_process
 
-def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     datatype = "|".join(data.columns).replace('\n', ' ')
     DATATYPES.append(datatype)
     print(f"Datatype: {datatype} NOT FOUND")
@@ -80,11 +86,11 @@ def NoneHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFra
 
     return pd.DataFrame(columns = COLUMNS)
 
-def IgnoreHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+def IgnoreHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     return pd.DataFrame(columns = COLUMNS)
 
-def TestHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
-    NoneHDR_process(header, data, footer, inname, clientid, sheet, logf)
+def TestHDR_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+    NoneHDR_process(header, data, footer, inname, clientid, params, sheet, logf)
     
     nameparts = os.path.split(inname)
     fname = os.path.splitext(nameparts[1])[0]
@@ -131,6 +137,7 @@ HDRSIGNATURES = [{"датадокумента|датаоперации|n|бик|
                  {"nпп|датаоперацииpostingdate|датавалютирvaluedate|видоперoptype|номердокументаdocumentnumber|реквизитыкорреспондентаcounterpartydetailsнаименованиеname|реквизитыкорреспондентаcounterpartydetailsсчетaccount|реквизитыкорреспондентаcounterpartydetailsбанкbank|дебетdebit|кредитcredit|основаниеоперацииназначениеплатежаpaymentdetails": BankStatement_15_process},
                  {"nдокумента|дата|бик|nсчета|дебоборот|кредоборот|иннинаименованиеполучателя|назначениеплатежа": BankStatement_16_process},
                  {"дата|nдок|во|банкконтрагента|контрагент|счетконтрагента|дебет|кредит|назначениеплатежа": BankStatement_17_process},
+                 {"дата|no|во|бик|банкконтрагента|контрагент|иннконтрагента|счетконтрагента|дебет|кредит|назначениеплатежа": BankStatement_17_process},
                  {"nпп|датасовершенияоперацииддммгг|реквизитыдокументанаоснованиикоторогобыласовершенаоперацияпосчетуспециальномубанковскомусчетувидшифр|реквизитыдокументанаоснованиикоторогобыласовершенаоперацияпосчетуспециальномубанковскомусчетуномер|реквизитыдокументанаоснованиикоторогобыласовершенаоперацияпосчетуспециальномубанковскомусчетудата|реквизитыбанкаплательщикаполучателяденежныхсредствномеркорреспондентскогосчета|реквизитыбанкаплательщикаполучателяденежныхсредствнаименование|реквизитыбанкаплательщикаполучателяденежныхсредствбик|реквизитыплательщикаполучателяденежныхсредствнаименованиефио|реквизитыплательщикаполучателяденежныхсредствиннкио|реквизитыплательщикаполучателяденежныхсредствкпп|реквизитыплательщикаполучателяденежныхсредствномерсчетаспециальногобанковскогосчета|суммаоперациипосчетуспециальномубанковскомусчетуподебету|суммаоперациипосчетуспециальномубанковскомусчетупокредиту|назначениеплатежа": BankStatement_18_process},
                  {"номер|номерсчета|дата|контрагентcчет|контрагент|поступление|валюта|списание|валюта|назначение": BankStatement_19_process},
                  {"nпп|nдок|датаоперации|бикswiftбанкаплат|наименованиебанкаплательщика|наименованиеплательщика|иннплательщика|nсчетаплательщика|бикswiftбанкаполуч|наименованиебанкаполучателя|наименованиеполучателя|иннполучателя|nсчетаполучателя|сальдовходящее|дебет|кредит|сальдоисходящее|назначениеплатежа": BankStatement_20_process},
@@ -165,6 +172,7 @@ HDRSIGNATURES = [{"датадокумента|датаоперации|n|бик|
                  {"nn|датапров|во|номдок|бик|счеткорреспондент|дебет|кредит|основание|основание": BankStatement_41_process},
                  {"n|дата|счеткорреспондент|оборотдебет|обороткредит|примечание": BankStatement_42_process},
                  {"дата|номер|дебет|кредит|контрагентнаименованиеиннкппсчет|контрагентбанкбикнаименование|назначениеплатежа|коддебитор|документ": BankStatement_43_process},
+                 {"дата|номер|дебет|кредит|контрагентнаименованиеиннкппсчет|контрагентбанкбикнаименование|назначениеплатежа|коддебитора|документ": BankStatement_43_process},
                  {"номердокумента|ко|датаоперации|дебет|кредит|реквизитыкорреспондентабик|реквизитыкорреспондентанаименование|основаниеоперации": BankStatement_44_process},
                  {"column|no|контрагент|иннконтрагента|счетконтрагента|дебет|кредит|назначениеплатежа": BankStatement_45_process},
                  {"no|датаоперации|nдокумента|шифрдокумента|бикбанкакорреспондента|наименованиекорреспондента|nсчетакорреспондента|дебет|кредит|суммавнацпокрытии|назначениеплатежа": BankStatement_46_process},
@@ -172,6 +180,11 @@ HDRSIGNATURES = [{"датадокумента|датаоперации|n|бик|
                  {"датаоперации|датадокумента|во|nдокта|коррсчет|бик|наименованиебанка|счет|иннинаименованиекорреспондента|дебет|кредит|назначениеплатежа": BankStatement_48_process},
                  {"номерстроки|датапроводки|видоперации|номердокументаклиента|номердокументабанканомердокументавсмфр|счетплательщикаполучателя|дебет|кредит|остаток|назначениеплатежа": BankStatement_49_process},
                  {"датаоперации|номердокумента|корреспондентнаименованиеинн|корреспондентномерсчета|корреспондентнаименованиебанкабик|дебет|кредит|назначениеплатежа": BankStatement_50_process},
+                 {"дата|n|во|контрагентинн|контрагентбикбанка|контрагентсчет|контрагентнаименование|оборотыrurдебет|оборотыrurкредит|назначение": BankStatement_51_process},
+                 {"датапроводки|счетдебет|счеткредит|сумма|nдок|вид|во|банккоррбикинаименование|назначениеплатежа": BankStatement_52_process},
+                 {"дата|n|иннплательщика|иннполучателя|корреспондентбик|корреспондентсчет|корреспондентнаименование|во|содержание|оборотыrurдебет|оборотыrurкредит": BankStatement_53_process},
+                 {"документ|датаоперации|корреспондент|оборотдт|обороткт|назначениеплатежа": BankStatement_54_process},
+                 {"датапроводки|во|номдок|банккорр|названиекорреспондента|счетплательщика|счетполучателя|дебет|кредит|назначениеплатежа": BankStatement_55_process},
                  ]
 
 """
@@ -188,7 +201,6 @@ def findHeaderRow(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     df = df.replace('\n', '').replace(r'\s+', '', regex=True).replace(r'\d+\.?\d*', '', regex=True).fillna("").astype(str)
     maxnotna = df.mask(df == '').notna().sum(axis=1).max()
     min_count =  int((perc*maxnotna/100) + 1)
-    #df = df.dropna( axis=0, thresh=min_count)
 
     for idx in range(len(df.index)-1):
         
@@ -199,8 +211,6 @@ def findHeaderRow(df: pd.DataFrame) -> tuple[int, int, list[int]]:
                 lambda x: '.'.join([y for y in x if y]), axis=1)
             cnas = header.mask(header == '').isna().sum()
             rowidx = df.iloc[idx:idx+1].index[0]
-            #newline = pd.DataFrame()
-            #result = pd.concat([result, pd.DataFrame([{"_idx": rowidx, "_cnas": cnas, "_header": "|".join(header)}])])
             result = pd.concat([result, pd.DataFrame([{"_idx": rowidx, "_cnas": cnas, "_header": header}])])
     result = result[result._idx==result[result._cnas==result._cnas.min()]._idx.min()]
     if result._header.size > 0:
@@ -228,14 +238,6 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
         ncols-=1
     dfFilled = df.iloc[:,:ncols]
 
-
-    #for idx in range(len(df.index)):
-    #    cnavalues = dfFilled.iloc[idx].isnull().sum()
-    #    if cnavalues*100/ncols < 53 and not all(dfFilled.iloc[idx][ncols-3:].isnull()):
-    #        firstrow = idx
-    #        break
-    
-    #firstrowidx = df.dropna(subset=[df.columns[-3], df.columns[-2], df.columns[-1]], how='all').isna().sum(axis=1).idxmin()
     lastrpowidx = firstrowidx + 1 # type: ignore
 
     for idx in range(len(df.index)-1, 0, -1):
@@ -244,27 +246,10 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
             lastrow = idx
             lastrpowidx = df.iloc[lastrow:lastrow+1].index[0]
             break
-    
-
-    #header = df.iloc[:firstrow].dropna(axis=1,how='all').dropna(axis=0,how='all')
-    #footer = df.iloc[lastrow + 1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all')
     header = df.loc[:firstrowidx-1].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
     footer = df.loc[lastrpowidx+1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
-
-
-    #df = df.iloc[firstrow : lastrow + 1]
     df = df.loc[firstrowidx : lastrpowidx, headercols]
-    #Удаляем из головы все столбцы, где больше 40% значений NaN
-    #lastrow = len(df.index)
-    #scol = 0
-    #partialColumns = (df.isnull().sum() > lastrow * 0.7)
-    #for idx in range(len(partialColumns.index)-1):
-    #    if not partialColumns.iloc[idx]:
-    #        break
-    #    scol+=1
-    #df = df.iloc[:,scol:]
 
-    #data = df.iloc[firstrow : lastrow + 1].dropna(axis=1,how='all').dropna(axis=0,how='all')
     data = df.dropna(axis=1,how='all').dropna(axis=0,how='all')
     return (
 		header,
@@ -275,12 +260,8 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
 def setDataColumns(df) -> pd.DataFrame:
     header1 = df.iloc[0]
     header1 = header1.mask(header1 == '').fillna(method='ffill').fillna("").astype(str)
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     header1 = header1.str.lower().replace('\n', '').replace(r'\s+', '', regex=True).replace(r'ё', 'е', regex=True).fillna("").astype(str)
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #header1 = header1.replace('\n', '').replace(r'\s+', '', regex=True).replace(r'\d+\.?\d*', '', regex=True).fillna("").astype(str)
     datastart = 1
-    #Здесь возможно надо проверять не на null, а на naп - integer или дата (через regex)
 
     if len(df.axes[0]) > 1 and df.iloc[1].mask(df.iloc[1]=='').isnull().iloc[0]:
         header2 = df.iloc[1].fillna("").astype(str)
@@ -290,7 +271,6 @@ def setDataColumns(df) -> pd.DataFrame:
         datastart = 2
     else:
         header = header1
-    #header = header.drop_duplicates()
     df = df[datastart:]
     df.columns = header.str.lower().replace(r'[\n\.\,\(\)\/\-]', '', regex=True).replace(r'№', 'n', regex=True).replace(r'\s+', '', regex=True).replace(r'ё', 'е', regex=True).mask(header1 == '').fillna("column")
     ncols = len(df.columns)
@@ -314,9 +294,23 @@ import warnings
 warnings.filterwarnings("ignore", 'This pattern has match groups')
 
 #sets to_ignore to True, if entrDate is empty
-def cleanupProcessedData(df: pd.DataFrame) -> pd.DataFrame:
+def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str) -> pd.DataFrame:
+
+    #cleanup
     df = df[df.entryDate.notna()]
-    df = df[df.entryDate.astype(str).str.contains(r"^(\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True)]
+    df = df[df.entryDate.astype(str).str.contains(r"^(?:\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True)]
+
+    #enreach
+    df["__hdrcpTaxCode"] = params["inn"]
+    df["__hdrclientBIC"] = params["bic"]
+    df["__hdrclientAcc"] = params["account"]
+    df["__hdropenBalance"] = params["amount"]
+    df["__header"] = params["header"]
+
+    df["clientID"] = clientid
+    df["filename"] = f"{inname}_{sheet}"
+    df['processdate'] = datetime.now()
+
     return df
 
 
@@ -362,8 +356,7 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
         print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
     for sheet in sheets:
         try:
-            df = sheets[sheet]
-            df = df.dropna(axis=1,how='all')
+            df = sheets[sheet].dropna(axis=1,how='all')
             if not df.empty:
                 kind = getExcelSheetKind(df)
                 if kind == "выписка":
@@ -372,11 +365,15 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
                         data = setDataColumns(data)
                         data = cleanupRawData(data)
                         signature = "|".join(data.columns).replace('\n', ' ')
+                        
+                        params = getHeaderValues("|".join(header[:].apply(lambda x: '|'.join(x.dropna().astype(str)), axis=1)), signature)
+
                         funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
                         func = funcs[0] if funcs else NoneHDR_process
-                        outdata = func(header, data, footer, inname, clientid, sheet, logf) # type: ignore
-                        outdata = cleanupProcessedData(outdata)
-                        result = pd.concat([result, outdata])
+                        outdata = func(header, data, footer, inname, clientid, params, sheet, logf) # type: ignore
+                        if not outdata.empty:
+                            outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, str(sheet))
+                            result = pd.concat([result, outdata])
                 else: 
                     logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
                     logf.write(logstr)
@@ -391,6 +388,20 @@ def pdfPagesCount(pdfname)->int:
     with open(pdfname,'rb') as f:
         pdfReader = PyPDF2.PdfFileReader(f)
         return pdfReader.getNumPages()
+
+def getHeadLinesPDF(pdfname: str, nlines: int = 3) :
+    result = []
+    for page_layout in extract_pages(pdfname, maxpages=1) :
+        for element in page_layout :
+            if isinstance(element, LTTextBoxHorizontal) :
+                txt = element.get_text()
+                lines = [x.strip() for x in txt.split("\n")]
+                for line in lines :
+                    if len(line) > 0 :
+                        result.append(line)
+                        if len(result) >= nlines :
+                            return result
+    return result
 
 def getPDFData(inname: str) -> pd.DataFrame:
     npages = pdfPagesCount(inname)
@@ -413,6 +424,22 @@ def getPDFData(inname: str) -> pd.DataFrame:
     return df.reset_index(drop=True).dropna(axis=1,how='all')
 
 
+def getHeaderValues(header: str, signature: str) -> dict:
+    
+    hdr = re.sub(r"[\n\.\,\(\)\/\-\|]", '',  re.sub(r'№', 'n', re.sub(r'\s+', '', re.sub(r'ё', 'е', header)))).lower()
+    eoh = hdr.find(signature[:8].replace('|', ''))
+    if eoh != -1:
+        header = header[:int(len(header)*eoh/len(hdr))]
+    account = re.search(REGEX_ACCOUNT, header)
+    account = account.group() if account else ""
+    bic = re.search(REGEX_BIC, header)
+    bic = bic.group() if bic else ""
+    inn = re.search(REGEX_INN, header)
+    inn = inn.group() if inn else ""
+    amount = re.search(REGEX_AMOUNT, header)
+    amount = amount.group() if amount else ""
+    return {"header": header, "bic": bic, "account": account, "inn": inn, "amount": amount}
+
 def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
     data = pd.DataFrame()
@@ -426,10 +453,13 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
             data = setDataColumns(data)
             data = cleanupRawData(data)
             signature = "|".join(data.columns).replace('\n', ' ')
+            
+            params = getHeaderValues('|'.join(getHeadLinesPDF(inname, 50)), signature)
+
             funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
             func = funcs[0] if funcs else NoneHDR_process
-            outdata = func(header, data, footer, inname, clientid, "pdf", logf) # type: ignore
-            outdata = cleanupProcessedData(outdata)
+            outdata = func(header, data, footer, inname, clientid, params, "pdf", logf) # type: ignore
+            outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, "pdf")
             result = pd.concat([result, outdata])
     
     except Exception as err:
@@ -532,7 +562,7 @@ def getArguments():
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
     parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
-    parser.add_argument("--excel", default=False, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
+    parser.add_argument("--excel", default=True, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
     return vars(parser.parse_args())
 
 def getParameters():
