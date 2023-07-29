@@ -19,6 +19,8 @@ def BankStatement_53_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     df["cpBIC"] = data["корреспондентбик"]
     #df["cpBank"] = data["банккоррбикинаименование"]
     df["cpAcc"] = data["корреспондентсчет"]
+    data["оборотыrurдебет"] = data["оборотыrurдебет"].fillna("0.00")
+    data["оборотыrurкредит"] = data["оборотыrurкредит"].fillna("0.00")
     df["cpTaxCode"] = data.apply(lambda row: row['иннплательщика'] if row['оборотыrurдебет'].startswith('0.00') else row['иннполучателя'], axis=1)
 
     df["clientTaxCode"] = data.apply(lambda row: row['иннполучателя'] if row['оборотыrurдебет'].startswith('0.00') else row['иннплательщика'], axis=1)
