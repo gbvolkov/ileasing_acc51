@@ -10,3 +10,5 @@ data/test.xlsx
 data/test.csv
 data/*
 __pycache__/*
+errors/preanalysis51_full.csv
+errors/*

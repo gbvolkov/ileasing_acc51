@@ -19,14 +19,14 @@ def BankStatement_52_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     #df["cpBIC"] = data["контрагентбикбанка"]
     df["cpBank"] = data["банккоррбикинаименование"]
 
-    df["cpAcc"] = data.apply(lambda row: row['счетдебет'] if row['счеткредит'].startswith(clientacc) else row['счеткредит'], axis=1)
-    df["clientAcc"] = data.apply(lambda row: row['счеткредит'] if row['счеткредит'].startswith(clientacc) else row['счетдебет'], axis=1)
+    df["cpAcc"] = data.apply(lambda row: row['счетдебет'] if str(row['счеткредит']).startswith(clientacc) else row['счеткредит'], axis=1)
+    df["clientAcc"] = data.apply(lambda row: row['счеткредит'] if str(row['счеткредит']).startswith(clientacc) else row['счетдебет'], axis=1)
 
     #df["cpTaxCode"] = data["контрагентинн"]
     #df["cpName"] = data["контрагентнаименование"]
 
-    df["Debet"] =  data.apply(lambda row: row['сумма'] if row['счетдебет'].startswith(clientacc) else '', axis=1)
-    df["Credit"] = data.apply(lambda row: row['сумма'] if row['счеткредит'].startswith(clientacc) else '', axis=1)
+    df["Debet"] =  data.apply(lambda row: row['сумма'] if str(row['счетдебет']).startswith(clientacc) else '', axis=1)
+    df["Credit"] = data.apply(lambda row: row['сумма'] if str(row['счеткредит']).startswith(clientacc) else '', axis=1)
     df["Comment"] = data["назначениеплатежа"]
 
     return df

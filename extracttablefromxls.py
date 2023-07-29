@@ -248,7 +248,8 @@ def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
             break
     header = df.loc[:firstrowidx-1].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
     footer = df.loc[lastrpowidx+1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
-    df = df.loc[firstrowidx : lastrpowidx, headercols]
+    #df = df.loc[firstrowidx : lastrpowidx, headercols]
+    df = df.loc[firstrowidx : , headercols]
 
     data = df.dropna(axis=1,how='all').dropna(axis=0,how='all')
     return (
@@ -273,6 +274,10 @@ def setDataColumns(df) -> pd.DataFrame:
         header = header1
     df = df[datastart:]
     df.columns = header.str.lower().replace(r'[\n\.\,\(\)\/\-]', '', regex=True).replace(r'№', 'n', regex=True).replace(r'\s+', '', regex=True).replace(r'ё', 'е', regex=True).mask(header1 == '').fillna("column")
+    cols=pd.Series(df.columns)
+    for dup in cols[cols.duplicated()].unique(): 
+        cols[cols[cols == dup].index.values.tolist()] = [dup + '.' + str(i) if i != 0 else dup for i in range(sum(cols == dup))]
+    df.columns=cols
     ncols = len(df.columns)
     return df[df[list(df.columns)].isnull().sum(axis=1) < ncols * 0.8].dropna(
         axis=0, how='all'
@@ -285,7 +290,7 @@ def cleanupRawData(df: pd.DataFrame) -> pd.DataFrame:
     ncols = len(df.columns)
     row2del = "_".join([str(x) for x in range(1, ncols+1)])
 
-    df["__rowval"] = pd.Series(df.fillna("").replace(r'\s+', '', regex=True).values.tolist()).str.join('_').values
+    df["__rowval"] = pd.Series(df.fillna("").astype(str).replace(r'\s+', '', regex=True).values.tolist()).str.join('_').values
     df = df[df.__rowval != row2del]
 
     return df.drop("__rowval", axis=1)
@@ -298,7 +303,9 @@ def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str,
 
     #cleanup
     df = df[df.entryDate.notna()]
-    df = df[df.entryDate.astype(str).str.contains(r"^(?:\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True)]
+    df.entryDate = df.entryDate.astype(str).replace(r'[\s\n]', '', regex=True)
+    #df = df[df.entryDate.astype(str).str.contains(r"^(?:\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True)]
+    df.loc[df.entryDate.astype(str).str.contains(r"^(?:\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True, na=False) == False, "result"] = 1
 
     #enreach
     df["__hdrcpTaxCode"] = params["inn"]
@@ -309,7 +316,7 @@ def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str,
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"
-    df['processdate'] = datetime.now()
+    df["processdate"] = datetime.now()
 
     return df
 
@@ -449,18 +456,18 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
         df = getPDFData(inname)
         if not df.empty:
             header, data, footer = getTableRange(df)
+            if not data.empty:
+                data = setDataColumns(data)
+                data = cleanupRawData(data)
+                signature = "|".join(data.columns).replace('\n', ' ')
+                
+                params = getHeaderValues('|'.join(getHeadLinesPDF(inname, 50)), signature)
 
-            data = setDataColumns(data)
-            data = cleanupRawData(data)
-            signature = "|".join(data.columns).replace('\n', ' ')
-            
-            params = getHeaderValues('|'.join(getHeadLinesPDF(inname, 50)), signature)
-
-            funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-            func = funcs[0] if funcs else NoneHDR_process
-            outdata = func(header, data, footer, inname, clientid, params, "pdf", logf) # type: ignore
-            outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, "pdf")
-            result = pd.concat([result, outdata])
+                funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+                func = funcs[0] if funcs else NoneHDR_process
+                outdata = func(header, data, footer, inname, clientid, params, "pdf", logf) # type: ignore
+                outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, "pdf")
+                result = pd.concat([result, outdata])
     
     except Exception as err:
         berror = True   
