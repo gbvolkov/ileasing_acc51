@@ -223,35 +223,39 @@ def findHeaderRow(df: pd.DataFrame) -> tuple[int, int, list[int]]:
 
 
 def getTableRange(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    firstrow = 0
     lastrow = len(df.index)-1
     ncols = len(df.columns)
     footer = pd.DataFrame()
 
     firstrowidx, nheadercols, headercols = findHeaderRow(df)
 
-    #Удаляем из хвоста все столбцы, где больше 90% значений NaN
-    partialColumns = (df.isnull().sum() > lastrow * 0.9)
-    for idx in range(len(partialColumns.index)-1, 0, -1):
-        if not partialColumns.iloc[idx]:
-            break
-        ncols-=1
-    dfFilled = df.iloc[:,:ncols]
+    if nheadercols > 0:
+        #Удаляем из хвоста все столбцы, где больше 90% значений NaN
+        partialColumns = (df.isnull().sum() > lastrow * 0.9)
+        for idx in range(len(partialColumns.index)-1, 0, -1):
+            if not partialColumns.iloc[idx]:
+                break
+            ncols-=1
+        dfFilled = df.iloc[:,:ncols]
 
-    lastrpowidx = firstrowidx + 1 # type: ignore
+        lastrpowidx = firstrowidx + 1 # type: ignore
 
-    for idx in range(len(df.index)-1, 0, -1):
-        cnavalues = dfFilled.iloc[idx].isnull().sum()
-        if (ncols-cnavalues)*100/nheadercols > 47 and not all(dfFilled.iloc[idx][ncols-3:].isnull()):
-            lastrow = idx
-            lastrpowidx = df.iloc[lastrow:lastrow+1].index[0]
-            break
-    header = df.loc[:firstrowidx-1].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
-    footer = df.loc[lastrpowidx+1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
-    #df = df.loc[firstrowidx : lastrpowidx, headercols]
-    df = df.loc[firstrowidx : , headercols]
+        for idx in range(len(df.index)-1, 0, -1):
+            cnavalues = dfFilled.iloc[idx].isnull().sum()
+            if (ncols-cnavalues)*100/nheadercols > 47 and not all(dfFilled.iloc[idx][ncols-3:].isnull()):
+                lastrow = idx
+                lastrpowidx = df.iloc[lastrow:lastrow+1].index[0]
+                break
+        header = df.loc[:firstrowidx-1].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
+        footer = df.loc[lastrpowidx+1 : ].dropna(axis=1,how='all').dropna(axis=0,how='all') # type: ignore
+        #df = df.loc[firstrowidx : lastrpowidx, headercols]
+        df = df.loc[firstrowidx : , headercols]
 
-    data = df.dropna(axis=1,how='all').dropna(axis=0,how='all')
+        data = df.dropna(axis=1,how='all').dropna(axis=0,how='all')
+    else:
+        header = pd.DataFrame()
+        data = pd.DataFrame()
+        footer = pd.DataFrame()
     return (
 		header,
 		data,
@@ -299,7 +303,7 @@ import warnings
 warnings.filterwarnings("ignore", 'This pattern has match groups')
 
 #sets to_ignore to True, if entrDate is empty
-def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str) -> pd.DataFrame:
+def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, function_name: str) -> pd.DataFrame:
 
     #cleanup
     df = df[df.entryDate.notna()]
@@ -308,7 +312,7 @@ def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str,
     df.loc[df.entryDate.astype(str).str.contains(r"^(?:\d{1,2}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{2,4}|\d{2,4}[\,\.\-\/]\d{1,2}[\,\.\-\/]\d{1,2}[\w ]*)", regex=True, na=False) == False, "result"] = 1
 
     #enreach
-    df["__hdrcpTaxCode"] = params["inn"]
+    df["__hdrclientTaxCode"] = params["inn"]
     df["__hdrclientBIC"] = params["bic"]
     df["__hdrclientAcc"] = params["account"]
     df["__hdropenBalance"] = params["amount"]
@@ -316,6 +320,7 @@ def cleanupAndEnreachProcessedData(df: pd.DataFrame, inname: str, clientid: str,
 
     df["clientID"] = clientid
     df["filename"] = f"{inname}_{sheet}"
+    df["function"] = function_name
     df["processdate"] = datetime.now()
 
     return df
@@ -352,48 +357,10 @@ def getExcelSheetKind(df):
         kinds.append(suitable[0])
     return kinds[0] if kinds else "UNDEFINED"
 
-def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
-    berror = False
-    df = pd.DataFrame()
-    data = pd.DataFrame()
-    result = pd.DataFrame()
-
-    sheets = pd.read_excel(inname, header=None, sheet_name=None)
-    if len(sheets) > 1 :
-        print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
-    for sheet in sheets:
-        try:
-            df = sheets[sheet].dropna(axis=1,how='all')
-            if not df.empty:
-                kind = getExcelSheetKind(df)
-                if kind == "выписка":
-                    header, data, footer = getTableRange(df)
-                    if not data.empty:
-                        data = setDataColumns(data)
-                        data = cleanupRawData(data)
-                        signature = "|".join(data.columns).replace('\n', ' ')
-                        
-                        params = getHeaderValues("|".join(header[:].apply(lambda x: '|'.join(x.dropna().astype(str)), axis=1)), signature)
-
-                        funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-                        func = funcs[0] if funcs else NoneHDR_process
-                        outdata = func(header, data, footer, inname, clientid, params, sheet, logf) # type: ignore
-                        if not outdata.empty:
-                            outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, str(sheet))
-                            result = pd.concat([result, outdata])
-                else: 
-                    logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
-                    logf.write(logstr)
-        except Exception as err:
-            berror = True   
-            print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
-            logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
-            logf.write(logstr)
-    return (result, len(sheets), berror)
-
 def pdfPagesCount(pdfname)->int:
     with open(pdfname,'rb') as f:
-        pdfReader = PyPDF2.PdfFileReader(f)
+        #pdfReader = PyPDF2.PdfFileReader(f)
+        pdfReader = PyPDF2.PdfReader(f)
         return pdfReader.getNumPages()
 
 def getHeadLinesPDF(pdfname: str, nlines: int = 3) :
@@ -432,7 +399,6 @@ def getPDFData(inname: str) -> pd.DataFrame:
 
 
 def getHeaderValues(header: str, signature: str) -> dict:
-    
     hdr = re.sub(r"[\n\.\,\(\)\/\-\|]", '',  re.sub(r'№', 'n', re.sub(r'\s+', '', re.sub(r'ё', 'е', header)))).lower()
     eoh = hdr.find(signature[:8].replace('|', ''))
     if eoh != -1:
@@ -447,28 +413,61 @@ def getHeaderValues(header: str, signature: str) -> dict:
     amount = amount.group() if amount else ""
     return {"header": header, "bic": bic, "account": account, "inn": inn, "amount": amount}
 
+def processData(df: pd.DataFrame, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
+    # sourcery skip: extract-method
+    outdata = pd.DataFrame()
+    header, data, footer = getTableRange(df)
+    if not data.empty:
+        data = setDataColumns(data)
+        data = cleanupRawData(data)
+        signature = "|".join(data.columns).replace('\n', ' ')
+        
+        params = getHeaderValues("|".join(header[:].apply(lambda x: '|'.join(x.dropna().astype(str)), axis=1)), signature)
+
+        funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+        func = funcs[0] if funcs else NoneHDR_process
+        outdata = func(header, data, footer, inname, clientid, params, sheet, logf) # type: ignore
+        if not outdata.empty:
+            outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, sheet, func.__name__) # type: ignore
+    return outdata
+
+def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
+    berror = False
+    df = pd.DataFrame()
+    result = pd.DataFrame()
+
+    sheets = pd.read_excel(inname, header=None, sheet_name=None)
+    if len(sheets) > 1 :
+        print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
+    for sheet in sheets:
+        try:
+            df = sheets[sheet].dropna(axis=1,how='all')
+            if not df.empty:
+                kind = getExcelSheetKind(df)
+                if kind == "выписка":
+                    outdata = processData(df, inname, clientid, str(sheet), logf)
+                    if not outdata.empty:
+                        result = pd.concat([result, outdata])
+                else: 
+                    logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
+                    logf.write(logstr)
+        except Exception as err:
+            berror = True   
+            print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
+            logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
+            logf.write(logstr)
+    return (result, len(sheets), berror)
+
 def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
-    data = pd.DataFrame()
     result = pd.DataFrame()
 
     try:
         df = getPDFData(inname)
         if not df.empty:
-            header, data, footer = getTableRange(df)
-            if not data.empty:
-                data = setDataColumns(data)
-                data = cleanupRawData(data)
-                signature = "|".join(data.columns).replace('\n', ' ')
-                
-                params = getHeaderValues('|'.join(getHeadLinesPDF(inname, 50)), signature)
-
-                funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-                func = funcs[0] if funcs else NoneHDR_process
-                outdata = func(header, data, footer, inname, clientid, params, "pdf", logf) # type: ignore
-                outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, "pdf")
+            outdata = processData(df, inname, clientid, "pdf", logf)
+            if not outdata.empty:
                 result = pd.concat([result, outdata])
-    
     except Exception as err:
         berror = True   
         print(f"{datetime.now()}:{inname}:ERROR:{err}")
@@ -502,7 +501,7 @@ def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
         if not df.empty:
             df.to_csv(outname, mode="a+", header=not Path(outname).is_file(), index=False)
             logstr = f"{datetime.now()}:PROCESSED: {clientid}:{filename}:{pages}:{str(df.shape[0])}:{outname}\n"
-            #shutil.move(inname, doneFolder + clientid + '_' + filename)
+            #move2Folder(inname, doneFolder)
         else: 
             berror = True
             logstr = f"{datetime.now()}:EMPTY: {clientid}:{filename}:{pages}:0:{outname}\n"
@@ -510,23 +509,29 @@ def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
     print(f"{datetime.now()}:DONE: {clientid}: {filename}")
     return not berror
 
-def getFilesList(log: str) -> list[str]:
+def getFilesList(log: str, start: int, end: int) -> list[str]:
+    # sourcery skip: min-max-identity
     df = pd.read_csv(log, on_bad_lines='skip', names=['status', 'clientid', 'filename', 'sheets', 'doctype', 'filetype', 'error'], delimiter='|')
+    if end < 0:
+        end = len(df)
+    if start < 0:
+        start = 0
+    df = df.iloc[start:end]
     filelist = df['filename'][(df['status']=='PROCESSED') & (df['doctype'] == 'выписка')]
-    return pd.Series(filelist).to_list()
+    return pd.Series(filelist).to_list() # type: ignore
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8") # type: ignore
 
-    preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT = getParameters()
+    preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT, start, end = getParameters()
     cnt = 0
     outname = outbasename + ".csv"
     DIRPATH = '../Data'
-    fileslist = getFilesList(preanalysislog)
+    fileslist = getFilesList(preanalysislog, start, end)
     with open(logname, "w", encoding='utf-8', buffering=1) as logf:
 
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
-        print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}")
+        print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}\nrange:{start}-{end}")
 
   
         #for file in fileslist:
@@ -552,10 +557,17 @@ def main():
     df = pd.DataFrame(np.unique(DATATYPES))
     df.to_csv("./data/datatypes.csv", mode="w", index = False)
 
+def move2Folder(fname: str, doneFolder: str):
+    outdir = f"{doneFolder}/{os.path.split(os.path.dirname(fname))[1]}"
+    outname = f"{outdir}/{os.path.basename(fname)}"
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+    shutil.move(fname, outname)
+
 def getFileExtList(isExcel, isPDF) -> list[str]:
     FILEEXT = []
     if isExcel:
-        FILEEXT += ['.xls', '.xlsx']
+        FILEEXT += ['.xls', '.xlsx', '.xlsm']
     if isPDF:
         FILEEXT += ['.pdf']
     return FILEEXT
@@ -570,6 +582,8 @@ def getArguments():
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
     parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")
     parser.add_argument("--excel", default=True, action=BooleanOptionalAction, help="Weather to include excel files (--no-excel opposite option)")
+    parser.add_argument("-s", "--start", default=-1, type=int, help="Starting position in data file")
+    parser.add_argument("-e", "--end", default=-1, type=int, help="Ending position in data file (not included)")
     return vars(parser.parse_args())
 
 def getParameters():
@@ -582,7 +596,9 @@ def getParameters():
     maxFiles = args["maxinput"]
     doneFolder = args["done"] + "/"
     FILEEXT = getFileExtList(args["excel"], args["pdf"])
-    return preanalysislog,logname,outbasename,bSplit,maxFiles,doneFolder,FILEEXT
+    start = args["start"]
+    end = args["end"]
+    return preanalysislog,logname,outbasename,bSplit,maxFiles,doneFolder,FILEEXT, start, end
 
 if __name__ == "__main__":
     DATATYPES = []

@@ -3,6 +3,28 @@ from typing import Any
 import pandas as pd
 from pathlib import Path
 import re
+import shutil
+import os
+
+def move2Folder(fname: str, doneFolder: str):
+    outdir = f"{doneFolder}/{os.path.split(os.path.dirname(fname))[1]}"
+    outname = f"{outdir}/{os.path.basename(fname)}"
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+    shutil.move(fname, outname)
+    
+inname = "../Data/027409994519_/1.txt"
+doneFolder = "../Done"
+clientid = "027409994519_"
+filename = "1.txt"
+
+move2Folder(inname, doneFolder)
+
+
+if not os.path.isdir(f"{doneFolder}/{clientid}/"):
+    os.mkdir(f"{doneFolder}/{clientid}/")
+shutil.move(inname, f"{doneFolder}/{clientid}/{filename}")
+#Path(inname).rename(f"{doneFolder}/{clientid}/{filename}")
 
 hdr = "17.11.2022|Сбе|1111111111111|рБизнес 41.018.02_0002|Филиал Публичного акционерного общества Сбербанк России Адыгейское отделение № 8620|ПАО Сбербанк|Дата формирования выписки 17.11.2022 в 16:11:27|ВЫПИСКА ОПЕРАЦИЙ ПО ЛИЦЕВОМУ СЧЕТУ 40802810601000005388|Глава крестьянского (фермерского) хозяйства КРАМАРЕНКО ВИТАЛИЙ ПЕТРОВИЧ|за период с|21 июня 2021 г.|по|21 декабря 2021 г.|Российский рубль|Дата предыдущей операции по счету 12 марта 2021 г.|Дата|проводки|Счет|Сумма по дебету Сумма по кредиту № документа ВО Банк (БИК и наименов"
 acc = re.search(r"\b\d{20}\b", hdr)

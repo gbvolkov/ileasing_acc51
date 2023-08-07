@@ -13,14 +13,16 @@ from const import COLUMNS
 
 def BankStatement_53_process(header: pd.DataFrame, data: pd.DataFrame, footer: pd.DataFrame, inname: str, clientid: str, params: dict, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     
+    data["оборотыrurдебет"] = data["оборотыrurдебет"].fillna("0.00")
+    data["оборотыrurкредит"] = data["оборотыrurкредит"].fillna("0.00")
+
     df = pd.DataFrame(columns = COLUMNS)
 
     df["entryDate"] = data["дата"]
     df["cpBIC"] = data["корреспондентбик"]
     #df["cpBank"] = data["банккоррбикинаименование"]
     df["cpAcc"] = data["корреспондентсчет"]
-    data["оборотыrurдебет"] = data["оборотыrurдебет"].fillna("0.00")
-    data["оборотыrurкредит"] = data["оборотыrurкредит"].fillna("0.00")
+    
     df["cpTaxCode"] = data.apply(lambda row: row['иннплательщика'] if row['оборотыrurдебет'].startswith('0.00') else row['иннполучателя'], axis=1)
 
     df["clientTaxCode"] = data.apply(lambda row: row['иннполучателя'] if row['оборотыrurдебет'].startswith('0.00') else row['иннплательщика'], axis=1)

@@ -3,7 +3,7 @@ COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientTaxCode", 
            "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
            "__header", "__hdrclientBIC", "__hdrclientAcc", "__hdrclientTaxCode",
            "__hdropenBalance",
-           "result", "filename", 'processdate']
+           "result", "filename", "function", "processdate"]
 DOCTYPES = ["выписка", "оборотно-сальдовая ведомость", "обороты счета", "обороты счёта", "анализ счета", "анализ счёта", "карточка счёта 51", "карточка счета 51"]
 REGEX_ACCOUNT = r"(?:\b\d{5}\s*\d{3}\s*\d\s*\d{5}\s*\d{6})"
 REGEX_INN = r"(?:\b\d{10}\b)|(?:\b\d{12}\b)"

@@ -27,7 +27,7 @@ def getHeadLinesPDF(pdfname: str, nlines: int = 3) :
 def getHeadLinesPDF2(pdfname: str, nlines: int = 3):
     result: list[str] = []
     with open(pdfname,'rb') as f:
-        pdfReader = PyPDF2.PdfFileReader(f)
+        pdfReader = PyPDF2.PdfReader(f)
         txt = pdfReader.pages[0].extract_text()
         lines = [x.strip() for x in txt.split("\n")]
         result.extend(line for line in lines if len(line) > 0)
@@ -129,8 +129,8 @@ def main():
         FILEEXT = ['.xls', '.xlsx', '.xlsm', '.pdf']
         sys.stdout.reconfigure(encoding="utf-8") # type: ignore
 
-        for root, dirs, files in os.walk(DIRPATH):
-            for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), files):
+        for root, dirs, files in sorted(os.walk(DIRPATH)):
+            for name in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), sorted(files)):
                 logf.flush()
                 sys.stdout.flush()
                 inname = root + os.sep + name  

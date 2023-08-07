@@ -23,6 +23,6 @@ def BankStatement_16_process(header: pd.DataFrame, data: pd.DataFrame, footer: p
     if len(header.axes[0]) >= 2:
         df["clientAcc"] = header.iloc[1,0]
         df["clientName"] = header.iloc[0,0]
-        df["clientBank"] = header.iloc[0,0]
+        df["clientBank"] = header.iloc[1,0]
 
     return df
