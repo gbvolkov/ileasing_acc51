@@ -5,6 +5,41 @@ from pathlib import Path
 import re
 import shutil
 import os
+from pdfminer.high_level import extract_pages
+from pdfminer.layout import LTTextBoxHorizontal, LTTextLineHorizontal
+import PyPDF2
+
+def getHeadLinesPDF2(pdfname: str, nlines: int = 3):
+    result: list[str] = []
+    with open(pdfname,'rb') as f:
+        pdfReader = PyPDF2.PdfReader(f)
+        txt = pdfReader.pages[0].extract_text()
+        lines = [x.strip() for x in txt.split("\n")]
+        result.extend(line for line in lines if len(line) > 0)
+    return result
+
+def pdf_get_y_value(elem):
+    return (elem.y0, -1*elem.x0)
+
+def getHeadLinesPDF(pdfname: str, nlines: int = 3) :
+    result = []
+    for page_layout in extract_pages(pdfname, maxpages=1) :
+        for element in sorted(list(filter(lambda elem: isinstance(elem, LTTextBoxHorizontal), page_layout)), key = pdf_get_y_value, reverse=True): # type: ignore
+            if isinstance(element, LTTextBoxHorizontal):
+                txt = element.get_text()
+                lines = [x.strip() for x in txt.split("\n")]
+                for line in lines :
+                    if len(line) > 0 :
+                        result.append(line)
+                        if len(result) >= nlines :
+                            return result
+    return result
+
+result = getHeadLinesPDF("../FullData\\9729289098_772901001\\[1]выписка 30.03.2021.pdf", 30)
+print(result)
+result = getHeadLinesPDF2("../FullData\\9729289098_772901001\\[1]выписка 30.03.2021.pdf", 30)
+print(result)
+
 
 def move2Folder(fname: str, doneFolder: str):
     outdir = f"{doneFolder}/{os.path.split(os.path.dirname(fname))[1]}"

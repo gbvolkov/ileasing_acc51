@@ -13,7 +13,6 @@ from io import TextIOWrapper
 import numpy as np
 import csv
 import re
-import traceback
 
 from excelutils import getExcelSheetKind
 from pdfutils import getHeadLinesPDF, getPDFData
@@ -352,22 +351,44 @@ def getHeaderValues(header: str, signature: str) -> dict:
 
 def processData(df: pd.DataFrame, headerstr: str, inname: str, clientid: str, sheet: str, logf: TextIOWrapper) -> pd.DataFrame:
     # sourcery skip: extract-method
-    outdata = pd.DataFrame()
+    #outdata = pd.DataFrame(columns=["file", "clientid", "sheet", "function", "signature", "header"])
     header, data, footer = getTableRange(df)
-    if not data.empty:
-        data = setDataColumns(data)
-        data = cleanupRawData(data)
-        signature = "|".join(data.columns).replace('\n', ' ')
-        if len(header != 0):
-            headerstr = "|".join(header[:].apply(lambda x: '|'.join(x.dropna().astype(str)), axis=1))
-        params = getHeaderValues(headerstr, signature)
+    if data.empty:
+        return pd.DataFrame(
+            [["EMPTY", clientid, inname, sheet, "", "", "", ""]],
+            columns=[
+                "status",
+                "clientid",
+                "file",
+                "sheet",
+                "function",
+                "params",
+                "signature",
+                "header",
+            ],
+        )
+    data = setDataColumns(data)
+    data = cleanupRawData(data)
+    signature = "|".join(data.columns).replace('\n', ' ')
+    if not headerstr and len(header != 0):
+        headerstr = "|".join(header[:].apply(lambda x: '|'.join(x.dropna().astype(str)), axis=1))
+    params = getHeaderValues(headerstr, signature)
 
-        funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
-        func = funcs[0] if funcs else NoneHDR_process
-        outdata = func(header, data, footer, inname, clientid, params, sheet, logf) # type: ignore
-        if not outdata.empty:
-            outdata = cleanupAndEnreachProcessedData(outdata, inname, clientid, params, sheet, func.__name__) # type: ignore
-    return outdata
+    funcs = list(filter(lambda item: item is not None, [sig.get(signature) for sig in HDRSIGNATURES]))
+    func = funcs[0] if funcs else NoneHDR_process
+    return pd.DataFrame(
+        [["PROCESSED", clientid, inname, sheet, func.__name__, str({k:v for k, v in params.items() if k in ('bic', 'account', 'inn', 'amount')}), signature, headerstr]], # type: ignore
+        columns=[
+            "status",
+            "clientid",
+            "file",
+            "sheet",
+            "function",
+            "params",
+            "signature",
+            "header",
+        ],
+    ) 
 
 def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     berror = False
@@ -392,7 +413,6 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
         except Exception as err:
             berror = True   
             print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
-            traceback.print_exc()
             logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
             logf.write(logstr)
     return (result, len(sheets), berror)
@@ -402,7 +422,7 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
     result = pd.DataFrame()
 
     try:
-        df = getPDFData(inname)
+        df = getPDFData(inname, 1)
         if not df.empty:
             header = getHeadLinesPDF(inname, 30)
             outdata = processData(df, "|".join(header), inname, clientid, "pdf", logf)
@@ -411,7 +431,6 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
     except Exception as err:
         berror = True   
         print(f"{datetime.now()}:{inname}:ERROR:{err}")
-        traceback.print_exc()
         logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:pdf:0:{type(err).__name__} {str(err)}\n"
         logf.write(logstr)
     return (result, 1, berror)
@@ -426,7 +445,6 @@ def process(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFra
         processFunc = processExcel
     elif inname.lower().endswith('.pdf'):
         processFunc = processPDF
-
 
     df, pages, berror = processFunc(inname, clientid, logf)
     return (df, pages, berror)
@@ -517,8 +535,8 @@ def getArguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-d", "--data", default="./data/test_preanalysis.csv", help="Data folder")
     parser.add_argument("-r", "--done", default="./data/Done", help="Done folder")
-    parser.add_argument("-l", "--logfile", default="./data/test_parsing_log.log.txt", help="Log file")
-    parser.add_argument("-o", "--output", default="./data/test_parsed_statements", help="Resulting file name (no extension)")
+    parser.add_argument("-l", "--logfile", default="./data/test_classify_log.txt", help="Log file")
+    parser.add_argument("-o", "--output", default="./data/test_classify", help="Resulting file name (no extension)")
     parser.add_argument("--split", default=True, action=BooleanOptionalAction, help="Weather splitting resulting file required (--no-spilt opposite option)")
     parser.add_argument("-m", "--maxinput", default=500, type=int, help="Maximum files sored in one resulting file")
     parser.add_argument("--pdf", default=True, action=BooleanOptionalAction, help="Weather to include pdf (--no-pdf opposite option)")

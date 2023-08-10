@@ -4,11 +4,11 @@ acc51log.txt
 preanalys51.txt
 parsed0.csv.7z
 extractstmts.7z
-data/Done.7z
-data/test_preanalysis.csv
-data/test.xlsx
-data/test.csv
 data/*
 __pycache__/*
-errors/preanalysis51_full.csv
 errors/*
+linux/*
+prelogs/*
+out/*
+data/parsed.csv
+arch/*
