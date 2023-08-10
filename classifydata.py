@@ -19,7 +19,7 @@ from excelutils import getExcelSheetKind
 from pdfutils import getHeadLinesPDF, getPDFData
 
 #using this (type: ignore) since camelot does not have stubs
-from const import COLUMNS, DOCTYPES, HDRSIGNATURES, REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
+from const import COLUMNS, DOCTYPES, REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 from BankStatement_1_process import BankStatement_1_process
 from BankStatement_2_process import BankStatement_2_process
 from BankStatement_3_process import BankStatement_3_process
@@ -80,6 +80,7 @@ from BankStatement_57_process import BankStatement_57_process
 from BankStatement_58_process import BankStatement_58_process
 from BankStatement_59_process import BankStatement_59_process
 from BankStatement_60_process import BankStatement_60_process
+from process_map import HDRSIGNATURES
 
 """
 Берём первые пятдесят строк
