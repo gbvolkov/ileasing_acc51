@@ -2,23 +2,22 @@ import pandas as pd
 from pathlib import Path
 import re
 from datetime import datetime
-import shutil
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
 import sys
 from io import TextIOWrapper
 import numpy as np
 import re
-import traceback
 from BankStatement_NO_process import NoneHDR_process, DATATYPES
 
 from excelutils import getExcelSheetKind
+from parsing_utils import getFileExtList, getFilesList, process_data_from_preanalysis, processOther, runParsing
 from pdfutils import getHeadLinesPDF, getPDFData
 
 #using this (type: ignore) since camelot does not have stubs
 from const import COLUMNS, DOCTYPES, REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 from process_map import HDRSIGNATURES
-from utils import print_exception
+from utils import move2Folder, print_exception
 
 """
 Берём первые пятдесят строк
@@ -231,9 +230,6 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
         print_exception(err, inname, clientid, "pdf", logf)
     return (result, 1, berror)
 
-def processOther(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
-    return (pd.DataFrame(), 0, True)
-
 def process(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
     processFunc = processOther
 
@@ -242,89 +238,13 @@ def process(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFra
     elif inname.lower().endswith('.pdf'):
         processFunc = processPDF
 
-
     df, pages, berror = processFunc(inname, clientid, logf)
     return (df, pages, berror)
 
-
-def runParsing(clientid, outname, inname, doneFolder, logf) -> int:
-    filename = os.path.basename(inname)
-    print(f"{datetime.now()}:START: {clientid}: {filename}")
-
-
-    df, pages, berror = process(inname, clientid, logf)
-    if not berror:
-        if not df.empty:
-            df.to_csv(outname, mode="a+", header=not Path(outname).is_file(), index=False)
-            logstr = f"{datetime.now()}:PROCESSED: {clientid}:{filename}:{pages}:{str(df.shape[0])}:{outname}\n"
-            #move2Folder(inname, doneFolder)
-        else: 
-            berror = True
-            logstr = f"{datetime.now()}:EMPTY: {clientid}:{filename}:{pages}:0:{outname}\n"
-        logf.write(logstr)
-    print(f"{datetime.now()}:DONE: {clientid}: {filename}")
-    return not berror
-
-def getFilesList(log: str, start: int, end: int) -> list[str]:
-    # sourcery skip: min-max-identity
-    df = pd.read_csv(log, on_bad_lines='skip', names=['status', 'clientid', 'filename', 'sheets', 'doctype', 'filetype', 'error'], delimiter='|')
-    if end < 0:
-        end = len(df)
-    if start < 0:
-        start = 0
-    df = df.iloc[start:end]
-    filelist = df['filename'][(df['status']=='PROCESSED') & (df['doctype'] == 'выписка')]
-    return pd.Series(filelist).to_list() # type: ignore
-
 def main():
     sys.stdout.reconfigure(encoding="utf-8") # type: ignore
-
     preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT, start, end = getParameters()
-    cnt = 0
-    outname = outbasename + ".csv"
-    DIRPATH = '../Data'
-    fileslist = getFilesList(preanalysislog, start, end)
-    with open(logname, "w", encoding='utf-8', buffering=1) as logf:
-
-        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
-        print(f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}\nrange:{start}-{end}")
-
-  
-        #for file in fileslist:
-        for fname in filter(lambda file: any(ext for ext in FILEEXT if (file.lower().endswith(ext))), fileslist):
-            if Path(fname).is_file():
-                parts = os.path.split(os.path.dirname(fname))
-                clientid = parts[1]
-                inname = fname
-                try:
-                    pages = 0
-                    if bSplit and cnt % maxFiles == 0:
-                        outname = outbasename + str(cnt) + ".csv"
-                    try :
-                        cnt += runParsing(clientid, outname, inname, doneFolder, logf)
-                    except Exception as err:
-                        print_exception(err, inname, clientid, f"{pages}", logf)
-                except Exception as err:
-                    print_exception(err, inname, clientid, "-999", logf)
-
-    #with open('datatypes.csv', 'w', encoding='utf-8') as f:
-    df = pd.DataFrame(np.unique(DATATYPES))
-    df.to_csv("./data/datatypes.csv", mode="w", index = False)
-
-def move2Folder(fname: str, doneFolder: str):
-    outdir = f"{doneFolder}/{os.path.split(os.path.dirname(fname))[1]}"
-    outname = f"{outdir}/{os.path.basename(fname)}"
-    if not os.path.isdir(outdir):
-        os.mkdir(outdir)
-    shutil.move(fname, outname)
-
-def getFileExtList(isExcel, isPDF) -> list[str]:
-    FILEEXT = []
-    if isExcel:
-        FILEEXT += ['.xls', '.xlsx', '.xlsm']
-    if isPDF:
-        FILEEXT += ['.pdf']
-    return FILEEXT
+    process_data_from_preanalysis(process, preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT, start, end)
 
 def getArguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
