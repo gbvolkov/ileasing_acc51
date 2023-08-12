@@ -1,17 +1,13 @@
-from enum import Enum
-from typing import Any
 import pandas as pd
 from pathlib import Path
 import re
 from datetime import datetime
-import locale
 import shutil
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
 import sys
 from io import TextIOWrapper
 import numpy as np
-import csv
 import re
 from BankStatement_NO_process import NoneHDR_process, DATATYPES
 
