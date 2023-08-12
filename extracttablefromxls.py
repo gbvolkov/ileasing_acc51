@@ -18,6 +18,7 @@ from pdfutils import getHeadLinesPDF, getPDFData
 #using this (type: ignore) since camelot does not have stubs
 from const import COLUMNS, DOCTYPES, REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 from process_map import HDRSIGNATURES
+from utils import print_exception
 
 """
 Берём первые пятдесят строк
@@ -210,11 +211,8 @@ def processExcel(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Da
                     logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
                     logf.write(logstr)
         except Exception as err:
-            berror = True   
-            print(f"{datetime.now()}:{inname}_{sheet}:ERROR:{err}")
-            traceback.print_exc()
-            logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:{sheet}:0:{type(err).__name__} {str(err)}\n"
-            logf.write(logstr)
+            berror = True
+            print_exception(err, inname, clientid, str(sheet), logf)
     return (result, len(sheets), berror)
 
 def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
@@ -230,10 +228,7 @@ def processPDF(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.Data
                 result = pd.concat([result, outdata])
     except Exception as err:
         berror = True   
-        print(f"{datetime.now()}:{inname}:ERROR:{err}")
-        traceback.print_exc()
-        logstr = f"{datetime.now()}:ERROR:{clientid}:{os.path.basename(inname)}:pdf:0:{type(err).__name__} {str(err)}\n"
-        logf.write(logstr)
+        print_exception(err, inname, clientid, "pdf", logf)
     return (result, 1, berror)
 
 def processOther(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, int, bool]:
@@ -308,11 +303,9 @@ def main():
                     try :
                         cnt += runParsing(clientid, outname, inname, doneFolder, logf)
                     except Exception as err:
-                        logf.write(f"{datetime.now()}:FILE_ERROR:{clientid}:{os.path.basename(inname)}:{pages}::{type(err).__name__} {str(err)}\n")
-                        print(f"{datetime.now()}:{inname}:ERROR:{err}")
+                        print_exception(err, inname, clientid, f"{pages}", logf)
                 except Exception as err:
-                    print(f"{datetime.now()}:{clientid}:!!!CRITICAL ERROR!!! {err}")
-                    logf.write(f"{datetime.now()}:CRITICAL ERROR:{clientid}:ND:ND:ERROR\n")
+                    print_exception(err, inname, clientid, "-999", logf)
 
     #with open('datatypes.csv', 'w', encoding='utf-8') as f:
     df = pd.DataFrame(np.unique(DATATYPES))
