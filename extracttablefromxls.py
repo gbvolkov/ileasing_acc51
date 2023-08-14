@@ -242,7 +242,7 @@ def process(inname: str, clientid: str, logf: TextIOWrapper) -> tuple[pd.DataFra
     return (df, pages, berror)
 
 def main():
-    sys.stdout.reconfigure(encoding="utf-8") # type: ignore
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True) # type: ignore
     preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT, start, end = getParameters()
     process_data_from_preanalysis(process, preanalysislog, logname, outbasename, bSplit, maxFiles, doneFolder, FILEEXT, start, end)
 
