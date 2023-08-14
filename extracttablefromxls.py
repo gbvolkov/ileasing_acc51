@@ -6,16 +6,14 @@ import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction
 import sys
 from io import TextIOWrapper
-import numpy as np
 import re
 from BankStatement_NO_process import NoneHDR_process, DATATYPES
 
 from excelutils import getExcelSheetKind
-from parsing_utils import getFileExtList, getFilesList, process_data_from_preanalysis, processOther, runParsing
+from parsing_utils import getFileExtList, process_data_from_preanalysis, processOther
 from pdfutils import getHeadLinesPDF, getPDFData
 
-#using this (type: ignore) since camelot does not have stubs
-from const import COLUMNS, DOCTYPES, REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
+from const import REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 from process_map import HDRSIGNATURES
 from utils import move2Folder, print_exception
 
