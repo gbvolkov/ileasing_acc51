@@ -12,7 +12,7 @@ def getHeadLinesEXCEL(data, nlines: int = 3):
     return [str(row) for row in result]
 
 
-def getExcelSheetKind(df) -> tuple[str, list[str]]:
+def get_excel_sheet_kind(df) -> tuple[str, list[str]]:
     kinds = []
     headers = getHeadLinesEXCEL(df, 30)
     if suitable := [

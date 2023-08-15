@@ -10,7 +10,7 @@ import camelot  # type: ignore
 from const import DOCTYPES
 
 
-def pdfPagesCount(pdfname) -> int:
+def pdf_pages_count(pdfname) -> int:
     with open(pdfname, "rb") as f:
         # pdfReader = PyPDF2.PdfFileReader(f)
         pdfReader = PyPDF2.PdfReader(f)
@@ -21,7 +21,7 @@ def pdf_get_y_value(elem):
     return (elem.y0, -1 * elem.x0)
 
 
-def getHeadLinesPDF(pdfname: str, nlines: int = 3):
+def get_head_lines_pdf(pdfname: str, nlines: int = 3):
     result = []
     for page_layout in extract_pages(pdfname, maxpages=1):
         for element in sorted(list(filter(lambda elem: isinstance(elem, LTTextBoxHorizontal), page_layout)), key=pdf_get_y_value, reverse=True):  # type: ignore
@@ -36,8 +36,8 @@ def getHeadLinesPDF(pdfname: str, nlines: int = 3):
     return result
 
 
-def getPDFData(inname: str, maxpages=0) -> pd.DataFrame:
-    npages = pdfPagesCount(inname)
+def get_pdf_data(inname: str, maxpages=0) -> pd.DataFrame:
+    npages = pdf_pages_count(inname)
     if maxpages > 0:
         npages = min(npages, maxpages)
     spage = 1
