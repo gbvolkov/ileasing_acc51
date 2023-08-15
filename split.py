@@ -13,6 +13,7 @@ from argparse import (
 import sys
 from os.path import exists as file_exists
 
+
 def formatDate(dtStr):
     try:
         newstr = re.sub("[-/]", ".", dtStr)
@@ -37,35 +38,43 @@ def split_csv(outname, inname):
             clientid = row[clididx]
             if curclient != clientid:
                 curclient = clientid
-                if fout is not None :
+                if fout is not None:
                     fout.close()
                 outfilename = outname + "/" + curclient + ".csv"
                 bWriteHeader = not file_exists(outfilename)
-                fout = open(outfilename, "a+", encoding="utf-8", newline='')
+                fout = open(outfilename, "a+", encoding="utf-8", newline="")
                 writer = csv.writer(fout)
-            if writer is not None :
-                if bWriteHeader :
+            if writer is not None:
+                if bWriteHeader:
                     bWriteHeader = False
                     writer.writerow(header)
                 writer.writerow(row)
+
 
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "-i", "--input", default="./data/acc51parsed_full.csv", help="Input file"
     )
-    parser.add_argument("-o", "--output", default="./data/DataSplit", help="Output folder. No ending delimeter")
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="./data/DataSplit",
+        help="Output folder. No ending delimeter",
+    )
     args = vars(parser.parse_args())
 
     inname = args["input"]
     outname = args["output"]
 
-    sys.stdout.reconfigure(encoding="utf-8") # type: ignore
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
     print(
         "START:",
         datetime.now(),
-        "\ninput:", inname,
-        "\noutput:", outname,
+        "\ninput:",
+        inname,
+        "\noutput:",
+        outname,
     )
 
     print("Start transformation")
