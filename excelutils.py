@@ -1,7 +1,7 @@
 from const import DOCTYPES
 
 
-def getHeadLinesEXCEL(data, nlines: int = 3):
+def get_head_lines_excel(data, nlines: int = 3):
     idx = 0
     result = []
     while idx < data.shape[0] and idx < nlines:
@@ -14,7 +14,7 @@ def getHeadLinesEXCEL(data, nlines: int = 3):
 
 def get_excel_sheet_kind(df) -> tuple[str, list[str]]:
     kinds = []
-    headers = getHeadLinesEXCEL(df, 30)
+    headers = get_head_lines_excel(df, 30)
     if suitable := [
         kind
         for kind in DOCTYPES

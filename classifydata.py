@@ -27,18 +27,12 @@ from const import REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 from process_map import HDRSIGNATURES
 from utils import print_exception
 
-"""
-Берём первые пятдесят строк
-Сливаем каждую строку со следующей
-В результирующем датасете ищем первую строку с минимальным количеством нулов
-"""
-
 import warnings
 
 warnings.filterwarnings("ignore", "This pattern has match groups")
 
 
-def processData(
+def process_data(
     df: pd.DataFrame,
     headerstr: str,
     inname: str,
@@ -93,7 +87,7 @@ def processData(
     )
 
 
-def processExcel(
+def process_excel(
     inname: str, clientid: str, logf: TextIOWrapper
 ) -> tuple[pd.DataFrame, int, bool]:
     berror = False
@@ -109,7 +103,7 @@ def processExcel(
             if not df.empty:
                 kind, header = get_excel_sheet_kind(df)
                 if kind == "выписка":
-                    outdata = processData(
+                    outdata = process_data(
                         df, "|".join(header), inname, clientid, str(sheet), logf
                     )
                     if not outdata.empty:
@@ -123,7 +117,7 @@ def processExcel(
     return (result, len(sheets), berror)
 
 
-def processPDF(
+def process_pdf(
     inname: str, clientid: str, logf: TextIOWrapper
 ) -> tuple[pd.DataFrame, int, bool]:
     berror = False
@@ -133,7 +127,7 @@ def processPDF(
         df = get_pdf_data(inname, 1)
         if not df.empty:
             header = get_head_lines_pdf(inname, 30)
-            outdata = processData(df, "|".join(header), inname, clientid, "pdf", logf)
+            outdata = process_data(df, "|".join(header), inname, clientid, "pdf", logf)
             if not outdata.empty:
                 result = pd.concat([result, outdata])
     except Exception as err:
@@ -148,9 +142,9 @@ def process(
     processFunc = process_other
 
     if inname.lower().endswith(".xls") or inname.lower().endswith(".xlsx"):
-        processFunc = processExcel
+        processFunc = process_excel
     elif inname.lower().endswith(".pdf"):
-        processFunc = processPDF
+        processFunc = process_pdf
 
     df, pages, berror = processFunc(inname, clientid, logf)
     return (df, pages, berror)
@@ -168,7 +162,7 @@ def main():
         FILEEXT,
         start,
         end,
-    ) = getParameters()
+    ) = get_parameters()
     process_data_from_preanalysis(
         process,
         preanalysislog,
@@ -183,7 +177,7 @@ def main():
     )
 
 
-def getArguments():
+def get_arguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "-d", "--data", default="./data/test_preanalysis.csv", help="Data folder"
@@ -236,8 +230,8 @@ def getArguments():
     return vars(parser.parse_args())
 
 
-def getParameters():
-    args = getArguments()
+def get_parameters():
+    args = get_arguments()
 
     preanalysislog = args["data"]
     logname = args["logfile"]
