@@ -108,11 +108,11 @@ def main():
     DIRPATH = args["data"]  # + "/*/xls*"
     logname = args["logfile"]
 
-    with open(logname, "w", encoding="utf-8") as logf:
+    with open(logname, "w", encoding="utf-8", buffering=1) as logf:
         cnt = 0
 
         FILEEXT = [".xls", ".xlsx", ".xlsm", ".pdf"]
-        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)  # type: ignore
 
         for root, dirs, files in sorted(os.walk(DIRPATH)):
             for name in filter(
@@ -121,8 +121,8 @@ def main():
                 ),
                 sorted(files),
             ):
-                logf.flush()
-                sys.stdout.flush()
+                #logf.flush()
+                #sys.stdout.flush()
                 inname = root + os.sep + name
                 parts = os.path.split(root)
                 clientid = parts[1]
