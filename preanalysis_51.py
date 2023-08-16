@@ -60,6 +60,8 @@ def process_excel(xlsname, clientid, logf):
         try:
             kind, header = get_excel_sheet_kind(sheets[sheet])
             print(xlsname, ":", sheet, ":KIND:", kind)
+            if kind != "UNDEFINED":
+                return (kind, False)
             # break
         except Exception as err:
             berror = True
