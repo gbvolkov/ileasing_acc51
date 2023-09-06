@@ -1,1 +1,1 @@
-python.exe preanalysis_51.py --data=../FullData --logfile=./data/preanalysis51_full.csv > ./data/preanalysis_log_full.log 2> ./data/preanalysis_err_full.err
+python.exe preanalysis_51.py --data=../FullData --logfile=./data/preanalysis51_full_2.csv > ./data/preanalysis_log_full.log 2> ./data/preanalysis_err_full.err
