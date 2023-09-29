@@ -102,7 +102,7 @@ def process_excel(
             df = sheets[sheet].dropna(axis=1, how="all")
             if not df.empty:
                 kind, header = get_excel_sheet_kind(df)
-                if kind == "выписка":
+                if kind in get_active_types():
                     outdata = process_data(
                         df, "|".join(header), inname, clientid, str(sheet), logf
                     )
@@ -150,6 +150,15 @@ def process(
     return (df, pages, berror)
 
 
+ACTIVE_DOCTYPES = []
+
+def set_active_types(types: list[str]):
+    global ACTIVE_DOCTYPES
+    ACTIVE_DOCTYPES = types
+def get_active_types():
+    return ACTIVE_DOCTYPES
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
     (
@@ -162,7 +171,9 @@ def main():
         FILEEXT,
         start,
         end,
+        types,
     ) = get_parameters()
+    set_active_types(types)
     process_data_from_preanalysis(
         process,
         preanalysislog,
@@ -174,8 +185,13 @@ def main():
         FILEEXT,
         start,
         end,
+        ACTIVE_DOCTYPES
+        #["выписка", "карточка счета 51", "карточка счёта 51"]
     )
 
+
+def split_list(arg):
+    return arg.split(",")
 
 def get_arguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -194,7 +210,7 @@ def get_arguments():
     )
     parser.add_argument(
         "--split",
-        default=True,
+        default=False,
         action=BooleanOptionalAction,
         help="Weather splitting resulting file required (--no-spilt opposite option)",
     )
@@ -227,6 +243,13 @@ def get_arguments():
         type=int,
         help="Ending position in data file (not included)",
     )
+    parser.add_argument(
+        "-t",
+        "--types",
+        default=["выписка"],
+        type=split_list,
+        help="List of document types to process",
+    )
     return vars(parser.parse_args())
 
 
@@ -242,6 +265,7 @@ def get_parameters():
     FILEEXT = get_file_ext_list(args["excel"], args["pdf"])
     start = args["start"]
     end = args["end"]
+    types = args["types"]
     return (
         preanalysislog,
         logname,
@@ -252,6 +276,7 @@ def get_parameters():
         FILEEXT,
         start,
         end,
+        types,
     )
 
 

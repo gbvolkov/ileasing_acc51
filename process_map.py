@@ -59,6 +59,7 @@ from BankStatement_58_process import BankStatement_58_process
 from BankStatement_59_process import BankStatement_59_process
 from BankStatement_60_process import BankStatement_60_process
 from BankStatement_NO_process import IgnoreHDR_process
+from BankStatement_NO_process import Type51HDR_process
 
 
 HDRSIGNATURES = [{"датадокумента|датаоперации|n|бик|счет|контрагент|иннконтрагента|бикбанкаконтрагента|коррсчетбанкаконтрагента|наименованиебанкаконтрагента|счетконтрагента|списание|зачисление|назначениеплатежа|код": BankStatement_1_process},
@@ -145,4 +146,5 @@ HDRSIGNATURES = [{"датадокумента|датаоперации|n|бик|
                  {"датадок|no|контрагент|счетконтрагента|дебет|кредит|назначениеплатежа": BankStatement_58_process},
                  {"nпп|датадокументаdocumentdate|датавалютирvaluedate|видоперoptype|реквизитыкорреспондентаcounterpartydetailsнаименованиеname|реквизитыкорреспондентаcounterpartydetailsиннinn|реквизитыкорреспондентаcounterpartydetailsкппkpp|реквизитыкорреспондентаcounterpartydetailsсчетaccount|реквизитыкорреспондентаcounterpartydetailsбикbik|реквизитыкорреспондентаcounterpartydetailsбанкbank|списаноdebit|зачисленоcredit|основаниеоперацииназначениеплатежаpaymentdetails": BankStatement_59_process},
                  {"датаоперации|номертипдокумента|корреспондентнаименованиеинн|корреспондентномерсчета|корреспондентнаименованиебанкабик|дебет|кредит|назначениеплатежа": BankStatement_60_process},
+                 {"период|документ|аналитикадт|аналитикакт|дебетсчет|кредитсчет|текущеесальдо": Type51HDR_process},
                  ]

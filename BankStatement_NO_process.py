@@ -8,6 +8,25 @@ from const import COLUMNS
 DATATYPES: list[str] = []
 
 
+def Type51HDR_process(
+    header: pd.DataFrame,
+    data: pd.DataFrame,
+    footer: pd.DataFrame,
+    inname: str,
+    clientid: str,
+    params: dict,
+    sheet: str,
+    logf: TextIOWrapper,
+) -> pd.DataFrame:
+    datatype = "|".join(data.columns).replace("\n", " ")
+    DATATYPES.append(datatype)
+    print(f"Datatype: {datatype} Type 51 not yet implemented.")
+
+    logstr = f'{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:"{datatype}"\n'
+    logf.write(logstr)
+
+    return pd.DataFrame(columns=COLUMNS)
+
 def NoneHDR_process(
     header: pd.DataFrame,
     data: pd.DataFrame,

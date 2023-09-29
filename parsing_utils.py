@@ -258,7 +258,9 @@ def get_file_ext_list(isExcel, isPDF) -> list[str]:
     return FILEEXT
 
 
-def getFilesList(log: str, start: int, end: int, doctype: str = "выписка") -> list[str]:
+def getFilesList(log: str, start: int, end: int, doctype: list[str] = None) -> list[str]: # type: ignore
+    if doctype is None:
+        doctype = ["выписка"]
     # sourcery skip: min-max-identity
     df = pd.read_csv(
         log,
@@ -280,7 +282,7 @@ def getFilesList(log: str, start: int, end: int, doctype: str = "выписка"
         start = 0
     df = df.iloc[start:end]
     filelist = df["filename"][
-        (df["status"] == "PROCESSED") & (df["doctype"] == doctype)
+        (df["status"] == "PROCESSED") & (df["doctype"].isin(doctype))
     ]
     return pd.Series(filelist).to_list()  # type: ignore
 
@@ -324,11 +326,12 @@ def process_data_from_preanalysis(
     FILEEXT,
     start,
     end,
+    doctype = None
 ):
     cnt = 0
     outname = outbasename + ".csv"
     DIRPATH = "../Data"
-    fileslist = getFilesList(preanalysislog, start, end)
+    fileslist = getFilesList(preanalysislog, start, end, doctype) # type: ignore
     with open(logname, "w", encoding="utf-8", buffering=1) as logf:
         print(
             f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}\nrange:{start}-{end}"
