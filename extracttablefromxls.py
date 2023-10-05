@@ -9,6 +9,7 @@ from argparse import (
 import sys
 from io import TextIOWrapper
 from BankStatement_NO_process import NoneHDR_process, DATATYPES
+from const import get_active_types, set_active_types
 
 from excelutils import get_excel_sheet_kind
 from parsing_utils import (
@@ -23,7 +24,7 @@ from parsing_utils import (
 from pdfutils import get_head_lines_pdf, get_pdf_data
 
 from process_map import HDRSIGNATURES
-from utils import move_to_folder, print_exception
+from utils import move_to_folder, print_exception, split_list
 
 
 import warnings
@@ -80,7 +81,7 @@ def process_excel(
             df = sheets[sheet].dropna(axis=1, how="all")
             if not df.empty:
                 kind, header = get_excel_sheet_kind(df)
-                if kind == "выписка":
+                if kind in get_active_types():
                     outdata = process_data(
                         df, "|".join(header), inname, clientid, str(sheet), logf
                     )
@@ -140,7 +141,9 @@ def main():
         FILEEXT,
         start,
         end,
+        types,
     ) = get_parameters()
+    set_active_types(types)
     process_data_from_preanalysis(
         process,
         preanalysislog,
@@ -152,6 +155,7 @@ def main():
         FILEEXT,
         start,
         end,
+        get_active_types(),
     )
 
 
@@ -205,6 +209,13 @@ def get_arguments():
         type=int,
         help="Ending position in data file (not included)",
     )
+    parser.add_argument(
+        "-t",
+        "--types",
+        default=["карточка счета 51"], #["выписка"],
+        type=split_list,
+        help="List of document types to process",
+    )
     return vars(parser.parse_args())
 
 
@@ -220,6 +231,7 @@ def get_parameters():
     FILEEXT = get_file_ext_list(args["excel"], args["pdf"])
     start = args["start"]
     end = args["end"]
+    types = args["types"]
     return (
         preanalysislog,
         logname,
@@ -230,6 +242,7 @@ def get_parameters():
         FILEEXT,
         start,
         end,
+        types,
     )
 
 

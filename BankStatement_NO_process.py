@@ -7,6 +7,13 @@ from const import COLUMNS
 
 DATATYPES: list[str] = []
 
+# период|документ|аналитикадт|аналитикакт|дебетсчет|кредитсчет|текущеесальдо
+# COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientTaxCode", "clientName", "stmtDate", "stmtFrom", "stmtTo",
+#           "openBalance", "totalDebet", "totalCredit", "closingBalance",
+#           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
+#           "__header", "__hdrclientBIC", "__hdrclientAcc", "__hdrclientTaxCode",
+#           "__hdropenBalance",
+#           "toIgnore", "filename", 'processdate']
 
 def Type51HDR_process(
     header: pd.DataFrame,
@@ -18,6 +25,13 @@ def Type51HDR_process(
     sheet: str,
     logf: TextIOWrapper,
 ) -> pd.DataFrame:
+
+    #df = pd.DataFrame(columns=COLUMNS)
+    #df["entryDate"] = data["период"]
+    #df["Debet"] = data["дебетсчет"]
+    #df["Credit"] = data["кредитсчет"]
+    #df["Comment"] = data["документ"]
+
     datatype = "|".join(data.columns).replace("\n", " ")
     DATATYPES.append(datatype)
     print(f"Datatype: {datatype} Type 51 not yet implemented.")

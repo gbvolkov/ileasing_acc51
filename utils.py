@@ -20,3 +20,6 @@ def move_to_folder(fname: str, doneFolder: str):
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
     shutil.move(fname, outname)
+
+def split_list(arg):
+    return arg.split(",")

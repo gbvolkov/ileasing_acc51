@@ -23,9 +23,9 @@ from parsing_utils import (
 from pdfutils import get_head_lines_pdf, get_pdf_data
 
 # using this (type: ignore) since camelot does not have stubs
-from const import REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
+from const import REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN, get_active_types, set_active_types
 from process_map import HDRSIGNATURES
-from utils import print_exception
+from utils import print_exception, split_list
 
 import warnings
 
@@ -150,15 +150,6 @@ def process(
     return (df, pages, berror)
 
 
-ACTIVE_DOCTYPES = []
-
-def set_active_types(types: list[str]):
-    global ACTIVE_DOCTYPES
-    ACTIVE_DOCTYPES = types
-def get_active_types():
-    return ACTIVE_DOCTYPES
-
-
 def main():
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
     (
@@ -185,13 +176,10 @@ def main():
         FILEEXT,
         start,
         end,
-        ACTIVE_DOCTYPES
+        get_active_types(),
         #["выписка", "карточка счета 51", "карточка счёта 51"]
     )
 
-
-def split_list(arg):
-    return arg.split(",")
 
 def get_arguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -246,7 +234,7 @@ def get_arguments():
     parser.add_argument(
         "-t",
         "--types",
-        default=["выписка"],
+        default=["карточка счета 51"],
         type=split_list,
         help="List of document types to process",
     )

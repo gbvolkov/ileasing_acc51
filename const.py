@@ -48,3 +48,11 @@ REGEX_ACCOUNT = r"(?:\b\d{5}\s*\d{3}\s*\d\s*\d{5}\s*\d{6})"
 REGEX_INN = r"(?:\b\d{10}\b)|(?:\b\d{12}\b)"
 REGEX_BIC = r"\b\d{9}\b"
 REGEX_AMOUNT = r"((?<![\.\-\,0-9])(?:(?:\d{1,3}){1}(?:\s*\d{3})*\s*\d{1,3})[.\-,]\d{0,2}(?![\.\-\,0-9]))"
+
+ACTIVE_DOCTYPES = []
+
+def set_active_types(types: list[str]):
+    global ACTIVE_DOCTYPES
+    ACTIVE_DOCTYPES = types
+def get_active_types():
+    return ACTIVE_DOCTYPES
