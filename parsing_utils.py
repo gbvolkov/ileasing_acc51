@@ -5,6 +5,7 @@ from io import TextIOWrapper
 import re
 
 import pandas as pd
+import numpy as np
 from const import REGEX_ACCOUNT, REGEX_AMOUNT, REGEX_BIC, REGEX_INN
 
 from utils import print_exception
@@ -151,24 +152,25 @@ def set_data_columns(df) -> pd.DataFrame:
 
 
 def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
-    df = df.iloc[:50].fillna("").astype(str)
+    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
+    df_head = df.iloc[:50].fillna("").astype(str)
     result = pd.DataFrame(columns=["_idx", "_cnas", "_header"])
     axis = 0
     # Delete rows containing either 60% or more than 60% NaN Values
     perc = 50.0
-    df = (
-        df.replace("\n", "")
+    df_head = (
+        df_head.replace("\n", "")
         .replace(r"\s+", "", regex=True)
         .replace(r"\d+\.?\d*", "", regex=True)
         .fillna("")
         .astype(str)
     )
-    maxnotna = df.mask(df == "").notna().sum(axis=1).max()
+    maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
     min_count = int((perc * maxnotna / 100) + 1)
 
-    for idx in range(len(df.index) - 1):
+    for idx in range(len(df_head.index) - 1):
         header1 = (
-            df.iloc[idx]
+            df_head.iloc[idx]
             .replace("\n", "")
             .replace(r"\s+", "", regex=True)
             .replace(r"\d+\.?\d*", "", regex=True)
@@ -176,12 +178,27 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
             .astype(str)
         )
         if header1.mask(header1 == "").notna().sum() >= min_count:
-            header2 = df.iloc[idx + 1].fillna("").astype(str)
-            header = pd.concat([header1, header2], axis=1).apply(
-                lambda x: ".".join([y for y in x if y]), axis=1
+            cols_prev = df.iloc[:idx].replace(r'^\s*$', np.nan, regex=True).count()
+            cols = cols_full-cols_prev
+            header2 = df_head.iloc[idx + 1].fillna("").astype(str)
+            header = pd.concat([header1, header2, cols], axis=1).apply(
+                lambda x: ".".join(
+                    [
+                        y
+                        for y in x[:2]
+                        if y
+                        or not x.iloc[0]
+                        and not x.iloc[1]
+                        and x.iloc[2] > 0
+                    ]
+                ),
+                axis=1,
             )
+            #header = pd.concat([header1, header2], axis=1).apply(
+            #    lambda x: ".".join([y for y in x if y]), axis=1
+            #)
             cnas = header.mask(header == "").isna().sum()
-            rowidx = df.iloc[idx : idx + 1].index[0]
+            rowidx = df_head.iloc[idx : idx + 1].index[0]
             result = pd.concat(
                 [
                     result,
@@ -334,7 +351,7 @@ def process_data_from_preanalysis(
     fileslist = getFilesList(preanalysislog, start, end, doctype) # type: ignore
     with open(logname, "w", encoding="utf-8", buffering=1) as logf:
         print(
-            f"START:{datetime.now()}\ninput:{DIRPATH}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}\nrange:{start}-{end}"
+            f"START:{datetime.now()}\ninput:{preanalysislog}\nlog:{logname}\noutput:{outname}\nsplit:{bSplit}\nmaxinput:{maxFiles}\ndone:{doneFolder}\nextensions:{FILEEXT}\nrange:{start}-{end}\ndocTypes={doctype}"
         )
 
         for fname in filter(

@@ -5,6 +5,8 @@ from const import COLUMNS
 
 
 # датапроводки|во|nдок|банккорр|корреспондент|счетконтрагента|дебет|кредит|назначениеплатежа
+# датапроводки|датапроводки.1|во|nдок|nдок.1|банккорр|корреспондент|счетконтрагента|дебет|кредит|кредит.1|назначениеплатежа
+# датапроводки|датапроводки.1|во|nдок|nдок.1|банккорр|иннконтрагента|наименованиеконтрагента|счетконтрагента|дебет|дебет.1|кредит|назначениеплатежа
 # COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -24,8 +26,13 @@ def BankStatement_30_process(
     # df["cpBIC"] = data["БИК банка корр."]
     df["cpBank"] = data["банккорр"]
     df["cpAcc"] = data["счетконтрагента"]
-    # df["cpTaxCode"] = data["Корреспондент.ИНН"]
-    df["cpName"] = data["корреспондент"]
+    
+    if "иннконтрагента" in data.columns:
+        df["cpTaxCode"] = data["иннконтрагента"]
+    if "корреспондент" in data.columns:
+        df["cpName"] = data["корреспондент"]
+    if "наименованиеконтрагента" in data.columns:
+        df["cpName"] = data["наименованиеконтрагента"]
     df["Debet"] = data["дебет"]
     df["Credit"] = data["кредит"]
     df["Comment"] = data["назначениеплатежа"]
@@ -66,5 +73,5 @@ def set_header_fields(header, footer, df):
     obalance = header[header.iloc[:, 0] == "Входящий остаток"].dropna(
             axis=1, how="all"
         )
-    if obalance.size > 2:
-        df["openBalance"] = obalance.iloc[:, 2].values[0]
+    if obalance.size > 0:
+        df["openBalance"] = obalance.iloc[:, obalance.size-1].values[0]

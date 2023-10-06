@@ -4,6 +4,9 @@ import os
 import shutil
 import traceback
 
+def convert_to_float(amount: str) -> float:
+    amount=amount.replace(" ", "").replace(",", ".").replace("-",".")
+    return float(amount)
 
 def print_exception(
     err: Exception, inname: str, clientid: str, sheet: str, logf: TextIOWrapper

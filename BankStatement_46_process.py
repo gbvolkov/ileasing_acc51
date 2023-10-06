@@ -5,6 +5,7 @@ from const import COLUMNS
 
 
 # no|датаоперации|nдокумента|шифрдокумента|бикбанкакорреспондента|наименованиекорреспондента|nсчетакорреспондента|дебет|кредит|суммавнацпокрытии|назначениеплатежа
+# no|датаоперации|nдокумента|nсчетакорреспондента|дебет|суммавнацпокрытии|кредит|суммавнацпокрытии.1|назначениеплатежа
 # COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientName", "stmtDate", "stmtFrom", "stmtTo", "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "filename"]
@@ -21,11 +22,13 @@ def BankStatement_46_process(
     df = pd.DataFrame(columns=COLUMNS)
 
     df["entryDate"] = data["датаоперации"]
-    df["cpBIC"] = data["бикбанкакорреспондента"]
+    if "бикбанкакорреспондента" in data.columns:
+        df["cpBIC"] = data["бикбанкакорреспондента"]
     # df["cpBank"] = data["контрагент.банк(бик,наименование)"]
     df["cpAcc"] = data["nсчетакорреспондента"]
     # df["cpTaxCode"] = data["иннконтрагента"]
-    df["cpName"] = data["наименованиекорреспондента"]
+    if "наименованиекорреспондента" in data.columns:
+        df["cpName"] = data["наименованиекорреспондента"]
 
     df["Debet"] = data["дебет"]
     df["Credit"] = data["кредит"]

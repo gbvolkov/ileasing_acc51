@@ -14,6 +14,7 @@ from const import get_active_types, set_active_types
 from excelutils import get_excel_sheet_kind
 from parsing_utils import (
     cleanup_raw_data,
+    cleanup_and_enreach_processed_data,
     get_file_ext_list,
     get_header_values,
     get_table_range,
@@ -212,7 +213,7 @@ def get_arguments():
     parser.add_argument(
         "-t",
         "--types",
-        default=["карточка счета 51"], #["выписка"],
+        default=["карточка счета 51", "выписка"], 
         type=split_list,
         help="List of document types to process",
     )

@@ -1,0 +1,1 @@
+python.exe extracttablefromxls.py --data=./data/preanalysis51_full_ini.csv --done=../Done --output=./data/parsed_51_excel --no-split --no-pdf --excel --logfile=./data/extract_51_log_excel.txt --types="карточка счёта 51,карточка счета 51" > ./data/extract_51_log_excel.log 2> ./data/extract_51_log_excel.err
