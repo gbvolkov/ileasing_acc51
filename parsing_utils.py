@@ -145,12 +145,10 @@ def set_data_columns(df) -> pd.DataFrame:
 
 
 """
-Берём первые пятдесят строк
+Берём первые пятьдесят строк
 Сливаем каждую строку со следующей
 В результирующем датасете ищем первую строку с минимальным количеством нулов
 """
-
-
 def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
     df_head = df.iloc[:50].fillna("").astype(str)
@@ -239,19 +237,23 @@ def get_table_range(
             ncols -= 1
         dfFilled = df.iloc[:, :ncols]
 
-        lastrpowidx = firstrowidx + 1  # type: ignore
+        lastrowidx = firstrowidx + 1  # type: ignore
 
-        for idx in range(len(df.index) - 1, 0, -1):
+        for idx in range(len(df.index) - 1, df.index.get_loc(firstrowidx), -1):
             cnavalues = dfFilled.iloc[idx].isnull().sum()
             if (ncols - cnavalues) * 100 / nheadercols > 47 and not all(
                 dfFilled.iloc[idx][ncols - 3 :].isnull()
             ):
                 lastrow = idx
-                lastrpowidx = df.iloc[lastrow : lastrow + 1].index[0]
+                lastrowidx = df.iloc[lastrow : lastrow + 1].index[0]
                 break
         header = df.loc[: firstrowidx - 1].dropna(axis=1, how="all").dropna(axis=0, how="all")  # type: ignore
-        footer = df.loc[lastrpowidx + 1 :].dropna(axis=1, how="all").dropna(axis=0, how="all")  # type: ignore
-        # df = df.loc[firstrowidx : lastrpowidx, headercols]
+        footer = df.loc[lastrowidx + 1 :].dropna(axis=1, how="all").dropna(axis=0, how="all")  # type: ignore
+        # df = df.loc[firstrowidx : lastrowidx, headercols]
+        null_cols = df.loc[firstrowidx:lastrowidx, headercols].isna().all()
+        headercols = [headercols[colno] for colno, ifna in enumerate(null_cols) if not ifna]
+        
+
         df = df.loc[firstrowidx:, headercols]
 
         data = df.dropna(axis=1, how="all").dropna(axis=0, how="all")

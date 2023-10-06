@@ -30,8 +30,10 @@ def BankStatement_5_process(
     # df["cpAcc"] = data["Реквизиты корреспондента.Счет"]
     df["cpTaxCode"] = data["контрагентинн"]
     df["cpName"] = data["контрагентнаименование"]
-    df["Debet"] = data["дебет"]
-    df["Credit"] = data["кредит"]
+    if "дебет" in data.columns:
+        df["Debet"] = data["дебет"]
+    if "кредит" in data.columns:
+        df["Credit"] = data["кредит"]
     df["Comment"] = data["назначениеплатежа"]
 
     # header: За период,c 22.06.2020 по 22.06.2021,,,,
