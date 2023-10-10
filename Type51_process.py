@@ -6,6 +6,13 @@ import numpy as np
 
 from const import COLUMNS
 
+def getParametersValue(data: pd.DataFrame, col: str | int, lable: str, idx: int) -> pd.Series:
+    value = pd.Series()
+    rowval = data[data[col].astype(str).str.startswith(lable)].replace(r"\s+", "", regex=True).replace("", np.nan)
+    if not rowval.empty:
+        value = rowval.iloc[idx].dropna(how="all")
+    return value
+
 # период|документ|аналитикадт|аналитикакт|дебетсчет|кредитсчет|текущеесальдо
 # COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientTaxCode", "clientName", "stmtDate", "stmtFrom", "stmtTo",
 #           "codeIntDt", "codeIntCr",
@@ -55,21 +62,15 @@ def Type51HDR_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = data[data["период"].astype(str).str.startswith("Сальдо на начало")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+    openBalance = getParametersValue(data, "период", "Сальдо на начало", 0)
+    closingBalance = getParametersValue(data, "период", "Обороты за период и сальдо на конец", -1)
+
     if openBalance.size > 1:
-        df["openBalance"] = openBalance.iloc[:, openBalance.size-1].values[0]
-    closingBalance = data[data["период"].astype(str).str.startswith("Обороты за период и сальдо на конец")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["openBalance"] = openBalance.iloc[openBalance.size-1]
     if closingBalance.size > 2:
-        df["closingBalance"] = closingBalance.iloc[:, closingBalance.size-1].values[0]
-        df["totalDebet"] = closingBalance.iloc[:, 1].values[0]
-        df["totalCredit"] = closingBalance.iloc[:, 2].values[0]
-
-    #datatype = "|".join(data.columns).replace("\n", " ")
-    #DATATYPES.append(datatype)
-    #print(f"Datatype: {datatype} Type 51 not yet implemented.")
-
-    #logstr = f'{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:"{datatype}"\n'
-    #logf.write(logstr)
+        df["closingBalance"] = closingBalance.iloc[closingBalance.size-1]
+        df["totalDebet"] = closingBalance.iloc[1]
+        df["totalCredit"] = closingBalance.iloc[2]
 
     return df
 
@@ -116,24 +117,18 @@ def Type51HDR_1_process(
         df["codeIntCr"] = data["оборотыкредит"]
 
 
-    openBalance = header[header.iloc[:, 0].astype(str).str.startswith("Начальное сальдо")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+    openBalance = getParametersValue(header, 0, "Начальное сальдо", 0)
+    closingBalance = getParametersValue(header, 0, "Конечное сальдо", -1)
+    turnovers = getParametersValue(header, 0, "Обороты", -1)
+
     if openBalance.size > 1:
-        df["openBalance"] = openBalance.iloc[:, 1].values[0]
-    closingBalance = header[header.iloc[:, 0].astype(str).str.startswith("Конечное сальдо")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["openBalance"] = openBalance.iloc[1]
     if closingBalance.size > 1:
-        df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
-    turnovers = header[header.iloc[:, 0].astype(str).str.startswith("Обороты")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["closingBalance"] = closingBalance.iloc[1]
     if turnovers.size > 2:
-        df["totalDebet"] = turnovers.iloc[:, 1].values[0]
-        df["totalCredit"] = turnovers.iloc[:, 2].values[0]
-
-    #datatype = "|".join(data.columns).replace("\n", " ")
-    #DATATYPES.append(datatype)
-    #print(f"Datatype: {datatype} Type 51 not yet implemented.")
-
-    #logstr = f'{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:"{datatype}"\n'
-    #logf.write(logstr)
-
+        df["totalDebet"] = turnovers.iloc[1]
+        df["totalCredit"] = turnovers.iloc[2]
+    
     return df
 
 #дата|документ|операция|операция.1|дебетсчет|дебет|кредитсчет|кредит|текущеесальдо
@@ -166,22 +161,16 @@ def Type51HDR_2_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = data[data["дата"].astype(str).str.startswith("Сальдо на начало")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+
+    openBalance = getParametersValue(data, "дата", "Сальдо на начало", 0)
+    closingBalance = getParametersValue(data, "дата", "Обороты и сальдо на конец", -1)
+    
     if openBalance.size > 1:
-        df["openBalance"] = openBalance.iloc[:, openBalance.size-1].values[0]
-    closingBalance = data[data["дата"].astype(str).str.startswith("Обороты и сальдо на конец")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["openBalance"] = openBalance.iloc[openBalance.size-1]
     if closingBalance.size > 1:
-        df["closingBalance"] = closingBalance.iloc[:, closingBalance.size-1].values[0]
+        df["closingBalance"] = closingBalance.iloc[closingBalance.size-1]
         #df["totalDebet"] = closingBalance.iloc[:, 1].values[0]
         #df["totalCredit"] = closingBalance.iloc[:, 2].values[0]
-
-    #datatype = "|".join(data.columns).replace("\n", " ")
-    #DATATYPES.append(datatype)
-    #print(f"Datatype: {datatype} Type 51 not yet implemented.")
-
-    #logstr = f'{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:"{datatype}"\n'
-    #logf.write(logstr)
-
     return df
 
 # дата|документ|документ.1|операция|дебетсчет|дебет|дебетсумма|кредитсчет|кредит|кредитсумма|текущеесальдо|текущеесальдо.1
@@ -214,24 +203,17 @@ def Type51HDR_3_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = data[data["дата"].astype(str).str.startswith("Сальдо на начало")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+    openBalance = getParametersValue(data, "дата", "Сальдо на начало", 0)
+    closingBalance = getParametersValue(data, "дата", "Сальдо на конец", -1)
+    turnovers = getParametersValue(data, "дата", "Обороты за период", -1)
+
     if openBalance.size > 1:
-        df["openBalance"] = openBalance.iloc[:, 1].values[0]
-    closingBalance = data[data["дата"].astype(str).str.startswith("Сальдо на конец")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["openBalance"] = openBalance.iloc[1]
     if closingBalance.size > 1:
-        df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
-    turnovers = data[data["дата"].astype(str).str.startswith("Обороты за период")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["closingBalance"] = closingBalance.iloc[1]
     if turnovers.size > 2:
-        df["totalDebet"] = turnovers.iloc[:, 1].values[0]
-        df["totalCredit"] = turnovers.iloc[:, 2].values[0]
-
-
-    #datatype = "|".join(data.columns).replace("\n", " ")
-    #DATATYPES.append(datatype)
-    #print(f"Datatype: {datatype} Type 51 not yet implemented.")
-
-    #logstr = f'{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:"{datatype}"\n'
-    #logf.write(logstr)
+        df["totalDebet"] = turnovers.iloc[1]
+        df["totalCredit"] = turnovers.iloc[2]
 
     return df
 
@@ -289,24 +271,17 @@ def Type51HDR_4_process(
         df["codeIntCr"] = data["кредит"]
 
 
-    openBalance = data[data["дата"].astype(str).str.startswith("Входящий остаток")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+    openBalance = getParametersValue(data, "дата", "Входящий остаток", 0)
+    closingBalance = getParametersValue(data, "дата", "Исходящий остаток", -1)
+    turnovers = getParametersValue(data, "дата", "Обороты за период", -1)
+
     if openBalance.size > 1:
-        df["openBalance"] = openBalance.iloc[:, 1].values[0]
-    closingBalance = data[data["дата"].astype(str).str.startswith("Исходящий остаток")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["openBalance"] = openBalance.iloc[1]
     if closingBalance.size > 1:
-        df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
-    turnovers = data[data["дата"].astype(str).str.startswith("Обороты за период")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+        df["closingBalance"] = closingBalance.iloc[1]
     if turnovers.size > 2:
-        df["totalDebet"] = turnovers.iloc[:, 1].values[0]
-        df["totalCredit"] = turnovers.iloc[:, 2].values[0]
-
-
-    #datatype = "|".join(data.columns).replace("\n", " ")
-    #DATATYPES.append(datatype)
-    #print(f"Datatype: {datatype} Type 51 not yet implemented.")
-
-    #logstr = f'{datetime.now()}:NOT IMPLEMENTED:{clientid}:{os.path.basename(inname)}:{sheet}:0:"{datatype}"\n'
-    #logf.write(logstr)
+        df["totalDebet"] = turnovers.iloc[1]
+        df["totalCredit"] = turnovers.iloc[2]
 
     return df
 
