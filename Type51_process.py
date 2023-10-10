@@ -7,6 +7,7 @@ from const import COLUMNS
 
 # период|документ|аналитикадт|аналитикакт|дебетсчет|кредитсчет|текущеесальдо
 # COLUMNS = ["clientID", "clientBIC", "clientBank", "clientAcc", "clientTaxCode", "clientName", "stmtDate", "stmtFrom", "stmtTo",
+#           "codeIntDt", "codeIntCr",
 #           "openBalance", "totalDebet", "totalCredit", "closingBalance",
 #           "entryDate", "cpBIC", "cpBank", "cpAcc", "cpTaxCode", "cpName", "Debet", "Credit", "Comment",
 #           "__header", "__hdrclientBIC", "__hdrclientAcc", "__hdrclientTaxCode",
@@ -40,11 +41,27 @@ def Type51HDR_process(
             else row["аналитикакт"],
             axis=1,
         )
+    
     if "дебет" in data.columns:
         df["Debet"] = data["дебет"]
     if "кредит" in data.columns:
         df["Credit"] = data["кредит"]
     df["Comment"] = data["документ"]
+
+    #для карточки 51 счёта. Счёт внутреннего учёта по Дебету и Кредиту
+    if "дебетсчет" in data.columns:
+        df["codeIntDt"] = data["дебетсчет"]
+    if "кредитсчет" in data.columns:
+        df["codeIntCr"] = data["кредитсчет"]
+
+    openBalance = data[data["период"] == "Сальдо на начало"].dropna(axis=1, how="all")
+    if openBalance.size > 1:
+        df["openBalance"] = openBalance.iloc[:, openBalance.size-1].values[0]
+    closingBalance = data[data["период"] == "Обороты за период и сальдо на конец"].dropna(axis=1, how="all")
+    if closingBalance.size > 3:
+        df["closingBalance"] = closingBalance.iloc[:, closingBalance.size-1].values[0]
+        df["totalDebet"] = closingBalance.iloc[:, 1].values[0]
+        df["totalCredit"] = closingBalance.iloc[:, 2].values[0]
 
     #datatype = "|".join(data.columns).replace("\n", " ")
     #DATATYPES.append(datatype)
@@ -92,6 +109,23 @@ def Type51HDR_1_process(
     df["Credit"] = data["обороты.1"]
     df["Comment"] = data["документ"]
 
+    if "оборотыдебет" in data.columns:
+        df["codeIntDt"] = data["оборотыдебет"]
+    if "оборотыкредит" in data.columns:
+        df["codeIntCr"] = data["оборотыкредит"]
+
+
+    openBalance = header[header.iloc[:, 0] == "Начальное сальдо:"].dropna(axis=1, how="all")
+    if openBalance.size > 1:
+        df["openBalance"] = openBalance.iloc[:, 1].values[0]
+    closingBalance = header[header.iloc[:, 0] == "Конечное сальдо:"].dropna(axis=1, how="all")
+    if closingBalance.size > 1:
+        df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
+    turnovers = header[header.iloc[:, 0] == "Обороты:"].dropna(axis=1, how="all")
+    if turnovers.size > 3:
+        df["totalDebet"] = turnovers.iloc[:, 1].values[0]
+        df["totalCredit"] = turnovers.iloc[:, 3].values[0]
+
     #datatype = "|".join(data.columns).replace("\n", " ")
     #DATATYPES.append(datatype)
     #print(f"Datatype: {datatype} Type 51 not yet implemented.")
@@ -126,6 +160,20 @@ def Type51HDR_2_process(
     df["Credit"] = data["кредит"]
     df["Comment"] = data["документ"] + '|' + data["операция"] + "|" + data["операция.1"]
 
+    if "дебетсчет" in data.columns:
+        df["codeIntDt"] = data["дебетсчет"]
+    if "кредитсчет" in data.columns:
+        df["codeIntCr"] = data["кредитсчет"]
+
+    openBalance = data[data["дата"] == "Сальдо на начало"].dropna(axis=1, how="all")
+    if openBalance.size > 1:
+        df["openBalance"] = openBalance.iloc[:, openBalance.size-1].values[0]
+    closingBalance = data[data["дата"] == "Обороты и сальдо на конец"].dropna(axis=1, how="all")
+    if closingBalance.size > 1:
+        df["closingBalance"] = closingBalance.iloc[:, closingBalance.size-1].values[0]
+        #df["totalDebet"] = closingBalance.iloc[:, 1].values[0]
+        #df["totalCredit"] = closingBalance.iloc[:, 2].values[0]
+
     #datatype = "|".join(data.columns).replace("\n", " ")
     #DATATYPES.append(datatype)
     #print(f"Datatype: {datatype} Type 51 not yet implemented.")
@@ -159,6 +207,23 @@ def Type51HDR_3_process(
     df["Debet"] = data["дебетсумма"]
     df["Credit"] = data["кредитсумма"]
     df["Comment"] = data["документ"]
+    #для карточки 51 счёта. Счёт внутреннего учёта по Дебету и Кредиту
+    if "дебетсчет" in data.columns:
+        df["codeIntDt"] = data["дебетсчет"]
+    if "кредитсчет" in data.columns:
+        df["codeIntCr"] = data["кредитсчет"]
+
+    openBalance = data[data["дата"] == "Сальдо на начало"].dropna(axis=1, how="all")
+    if openBalance.size > 1:
+        df["openBalance"] = openBalance.iloc[:, 1].values[0]
+    closingBalance = data[data["дата"] == "Сальдо на конец"].dropna(axis=1, how="all")
+    if closingBalance.size > 1:
+        df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
+    turnovers = data[data["дата"] == "Обороты за период"].dropna(axis=1, how="all")
+    if turnovers.size > 2:
+        df["totalDebet"] = turnovers.iloc[:, 1].values[0]
+        df["totalCredit"] = turnovers.iloc[:, 2].values[0]
+
 
     #datatype = "|".join(data.columns).replace("\n", " ")
     #DATATYPES.append(datatype)
@@ -217,6 +282,22 @@ def Type51HDR_4_process(
     )    
     df["Comment"] = data["описание"]
 
+    if "дебет" in data.columns:
+        df["codeIntDt"] = data["дебет"]
+    if "кредит" in data.columns:
+        df["codeIntCr"] = data["кредит"]
+
+
+    openBalance = data[data["дата"] == "Входящий остаток"].dropna(axis=1, how="all")
+    if openBalance.size > 1:
+        df["openBalance"] = openBalance.iloc[:, 1].values[0]
+    closingBalance = data[data["дата"] == "Исходящий остаток  "].dropna(axis=1, how="all")
+    if closingBalance.size > 1:
+        df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
+    turnovers = data[data["дата"] == "Обороты за период, руб."].dropna(axis=1, how="all")
+    if turnovers.size > 2:
+        df["totalDebet"] = turnovers.iloc[:, 1].values[0]
+        df["totalCredit"] = turnovers.iloc[:, 2].values[0]
 
 
     #datatype = "|".join(data.columns).replace("\n", " ")

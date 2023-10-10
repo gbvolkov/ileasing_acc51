@@ -8,6 +8,8 @@ COLUMNS = [
     "stmtDate",
     "stmtFrom",
     "stmtTo",
+    "codeIntDt", #для карточки 51 счёта. Счёт внутреннего учёта по Дебету
+    "codeIntCr", #для карточки 51 счёта. Счёт внутреннего учёта по Кредиту
     "openBalance",
     "totalDebet",
     "totalCredit",
