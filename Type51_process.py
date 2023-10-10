@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime
 from io import TextIOWrapper
 import os
+import numpy as np
 
 from const import COLUMNS
 
@@ -54,10 +55,10 @@ def Type51HDR_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = data[data["период"].astype(str).str.startswith("Сальдо на начало")].dropna(axis=1, how="all")
+    openBalance = data[data["период"].astype(str).str.startswith("Сальдо на начало")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[:, openBalance.size-1].values[0]
-    closingBalance = data[data["период"].astype(str).str.startswith("Обороты за период и сальдо на конец")].dropna(axis=1, how="all")
+    closingBalance = data[data["период"].astype(str).str.startswith("Обороты за период и сальдо на конец")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if closingBalance.size > 2:
         df["closingBalance"] = closingBalance.iloc[:, closingBalance.size-1].values[0]
         df["totalDebet"] = closingBalance.iloc[:, 1].values[0]
@@ -115,16 +116,16 @@ def Type51HDR_1_process(
         df["codeIntCr"] = data["оборотыкредит"]
 
 
-    openBalance = header[header.iloc[:, 0].astype(str).str.startswith("Начальное сальдо")].dropna(axis=1, how="all")
+    openBalance = header[header.iloc[:, 0].astype(str).str.startswith("Начальное сальдо")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[:, 1].values[0]
-    closingBalance = header[header.iloc[:, 0].astype(str).str.startswith("Конечное сальдо")].dropna(axis=1, how="all")
+    closingBalance = header[header.iloc[:, 0].astype(str).str.startswith("Конечное сальдо")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if closingBalance.size > 1:
         df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
-    turnovers = header[header.iloc[:, 0].astype(str).str.startswith("Обороты")].dropna(axis=1, how="all")
-    if turnovers.size > 3:
+    turnovers = header[header.iloc[:, 0].astype(str).str.startswith("Обороты")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
+    if turnovers.size > 2:
         df["totalDebet"] = turnovers.iloc[:, 1].values[0]
-        df["totalCredit"] = turnovers.iloc[:, 3].values[0]
+        df["totalCredit"] = turnovers.iloc[:, 2].values[0]
 
     #datatype = "|".join(data.columns).replace("\n", " ")
     #DATATYPES.append(datatype)
@@ -165,10 +166,10 @@ def Type51HDR_2_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = data[data["дата"].astype(str).str.startswith("Сальдо на начало")].dropna(axis=1, how="all")
+    openBalance = data[data["дата"].astype(str).str.startswith("Сальдо на начало")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[:, openBalance.size-1].values[0]
-    closingBalance = data[data["дата"].astype(str).str.startswith("Обороты и сальдо на конец")].dropna(axis=1, how="all")
+    closingBalance = data[data["дата"].astype(str).str.startswith("Обороты и сальдо на конец")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if closingBalance.size > 1:
         df["closingBalance"] = closingBalance.iloc[:, closingBalance.size-1].values[0]
         #df["totalDebet"] = closingBalance.iloc[:, 1].values[0]
@@ -213,13 +214,13 @@ def Type51HDR_3_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = data[data["дата"].astype(str).str.startswith("Сальдо на начало")].dropna(axis=1, how="all")
+    openBalance = data[data["дата"].astype(str).str.startswith("Сальдо на начало")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[:, 1].values[0]
-    closingBalance = data[data["дата"].astype(str).str.startswith("Сальдо на конец")].dropna(axis=1, how="all")
+    closingBalance = data[data["дата"].astype(str).str.startswith("Сальдо на конец")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if closingBalance.size > 1:
         df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
-    turnovers = data[data["дата"].astype(str).str.startswith("Обороты за период")].dropna(axis=1, how="all")
+    turnovers = data[data["дата"].astype(str).str.startswith("Обороты за период")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if turnovers.size > 2:
         df["totalDebet"] = turnovers.iloc[:, 1].values[0]
         df["totalCredit"] = turnovers.iloc[:, 2].values[0]
@@ -288,13 +289,13 @@ def Type51HDR_4_process(
         df["codeIntCr"] = data["кредит"]
 
 
-    openBalance = data[data["дата"].astype(str).str.startswith("Входящий остаток")].dropna(axis=1, how="all")
+    openBalance = data[data["дата"].astype(str).str.startswith("Входящий остаток")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[:, 1].values[0]
-    closingBalance = data[data["дата"].astype(str).str.startswith("Исходящий остаток")].dropna(axis=1, how="all")
+    closingBalance = data[data["дата"].astype(str).str.startswith("Исходящий остаток")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if closingBalance.size > 1:
         df["closingBalance"] = closingBalance.iloc[:, 1].values[0]
-    turnovers = data[data["дата"].astype(str).str.startswith("Обороты за период")].dropna(axis=1, how="all")
+    turnovers = data[data["дата"].astype(str).str.startswith("Обороты за период")].replace(r"\s+", "", regex=True).replace("", np.nan).dropna(axis=1, how="all")
     if turnovers.size > 2:
         df["totalDebet"] = turnovers.iloc[:, 1].values[0]
         df["totalCredit"] = turnovers.iloc[:, 2].values[0]
