@@ -57,14 +57,51 @@ def transformDF(df):
     return df
 
 
+
+def dalyEntriesbyClient(ddf, uidsdir):
+    divisions = None
+    if uidsdir is not None:
+        divisions = []
+        for root in os.scandir(uidsdir):
+            if root.is_dir():
+                parts = os.path.split(root.path)
+                clientid = parts[1]
+                divisions.append(clientid)
+
+    if divisions is not None:
+        print("Divisions: ", len(divisions), "\n")
+
+    print("\tset Index")
+    ddf.set_index("clientID", divisions=divisions)
+    print("\tIndex set")
+    ddf["entryDate"] = dd.to_datetime(ddf["entryDate"], format="%d.%m.%Y", exact=True)  # type: ignore
+
+    # print("\tgroup by")
+    # dfDate = ddf.groupby("CLIENTID").aggregate(
+    #    dtMin=pd.NamedAgg(column="Date", aggfunc="min"),
+    #    dtMax=pd.NamedAgg(column="Date", aggfunc="max"),
+    # )
+    # print("\tgrouped")
+    print("\tgroup by 2")
+    dfDate = ddf.groupby(["clientID", ddf.entryDate.dt.year, ddf.entryDate.dt.month])[
+        "entryDate"
+    ].aggregate("count")
+    print("\tgrouped 2")
+    dfDate.columns = ["clientID", "YEAR", "MONTH", "Entries"]  # не работает!!!!
+    return dfDate
+
+def periodsGroups(ddf):
+    dfPeriods = ddf.groupby(["stmtDate"])
+    return dfPeriods
+
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", "--input", default="../DataSplit", help="Input folder")
+    parser.add_argument("-i", "--input", default="./data/DataSplit", help="Input folder")
     parser.add_argument(
         "-o", "--output", default="./data/result.csv", help="Resulting file"
     )
     parser.add_argument(
-        "-uids", "--uids", default="../RawData", help="Folders with Clients UIDS"
+        "-uids", "--uids", default="../FullData", help="Folders with Clients UIDS"
     )
     parser.add_argument(
         "--transform",
@@ -111,44 +148,18 @@ def main():
         csv_file_delimeter,
     )
 
-    divisions = None
-    if uidsdir is not None:
-        divisions = []
-        for root in os.scandir(uidsdir):
-            if root.is_dir():
-                parts = os.path.split(root.path)
-                clientid = parts[1]
-                divisions.append(clientid)
-
-    if divisions is not None:
-        print("Divisions: ", len(divisions), "\n")
-
     ddf = dd.read_csv(inname + "/*.csv", blocksize=None, dtype=str)  # type: ignore
-    print("\tset Index")
-    ddf.set_index("CLIENTID", divisions=divisions)
-    print("\tIndex set")
-    ddf["Date"] = dd.to_datetime(ddf["Date"], format="%d.%m.%Y", exact=True)  # type: ignore
 
-    # print("\tgroup by")
-    # dfDate = ddf.groupby("CLIENTID").aggregate(
-    #    dtMin=pd.NamedAgg(column="Date", aggfunc="min"),
-    #    dtMax=pd.NamedAgg(column="Date", aggfunc="max"),
-    # )
-    # print("\tgrouped")
-    print("\tgroup by 2")
-    dfDate = ddf.groupby(["CLIENTID", ddf.Date.dt.year, ddf.Date.dt.month])[
-        "Date"
-    ].aggregate("count")
-    print("\tgrouped 2")
-    dfDate.columns = ["CLIENTID", "YEAR", "MONTH", "Entries"]  # не рабоает!!!!
+    #dfRes = periodsGroups(ddf)
+    dfRes = dalyEntriesbyClient(ddf, uidsdir)
 
-    dd.to_csv(dfDate, outname, single_file=True, encoding="utf-8")  # type: ignore
+    dd.to_csv(dfRes, outname, single_file=True, encoding="utf-8")  # type: ignore
 
     print("Result produced")
-    if bTrans:
-        print("Start transformation")
-        transform_csv(transcvname, inname, csv_file_delimeter)
-    print("FINISHED")
+    #if bTrans:
+    #    print("Start transformation")
+    #    transform_csv(transcvname, inname, csv_file_delimeter)
+    #print("FINISHED")
 
 
 main()

@@ -1,1 +1,1 @@
-python.exe split.py --input=../Final3/acc51parsed_20230707.csv --output=../Final3/DataSplit
+python.exe split.py --input=./data/parsed_51_excel.csv --output=./data/DataSplit

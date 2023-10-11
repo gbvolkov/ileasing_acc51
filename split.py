@@ -27,8 +27,8 @@ def split_csv(outname, inname):
     with open(inname, "r", encoding="utf-8") as fin:
         reader = csv.reader(fin)
         header = next(reader)
-        clididx = header.index("CLIENTID")
-        dtidx = header.index("Date")
+        clididx = header.index("clientID")
+        dtidx = header.index("entryDate")
 
         curclient = ""
         writer = None
@@ -54,7 +54,7 @@ def split_csv(outname, inname):
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "-i", "--input", default="./data/acc51parsed_full.csv", help="Input file"
+        "-i", "--input", default="./data/parsed_51_excel.csv", help="Input file"
     )
     parser.add_argument(
         "-o",
