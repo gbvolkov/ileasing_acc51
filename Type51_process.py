@@ -34,7 +34,17 @@ def Type51HDR_process(
 ) -> pd.DataFrame:
 
     df = pd.DataFrame(columns=COLUMNS)
+
     df["entryDate"] = data["период"]
+
+    hdrlen = 0 if header.empty else header.shape[0]
+    if hdrlen > 0:
+        df["clientName"] = header.iloc[0,:].dropna().iloc[0]
+    if hdrlen > 1:
+        df["stmtDate"] = " ".join(header.iloc[1,:].dropna().astype(str))
+    if hdrlen > 2:
+        df["clientBank"] = " ".join(header.iloc[2,:].dropna().astype(str))
+
     if all(col in data.columns for col in ["аналитикакт", "аналитикадт"]):
         df["clientAcc"] = data.apply(
             lambda row: row["аналитикадт"]
@@ -49,7 +59,7 @@ def Type51HDR_process(
             else row["аналитикакт"],
             axis=1,
         )
-    
+
     if "дебет" in data.columns:
         df["Debet"] = data["дебет"]
     if "кредит" in data.columns:
@@ -95,6 +105,13 @@ def Type51HDR_1_process(
 
     df = pd.DataFrame(columns=COLUMNS)
     df["entryDate"] = data["датапроводки"]
+
+    hdrlen = 0 if header.empty else header.shape[0]
+    if hdrlen > 3:
+        df["clientName"] = header.iloc[3,:].dropna().iloc[0]
+    if hdrlen > 2:
+        df["stmtDate"] = " ".join(header.iloc[2,:].dropna().astype(str))
+
     df["clientAcc"] = data.apply(
         lambda row: row["аналитикадебет"]
         if row["оборотыдебет"] == "51"
@@ -152,6 +169,15 @@ def Type51HDR_2_process(
 
     df = pd.DataFrame(columns=COLUMNS)
     df["entryDate"] = data["дата"]
+
+    hdrlen = 0 if header.empty else header.shape[0]
+    if hdrlen > 0:
+        df["clientName"] = header.iloc[0,:].dropna().iloc[0]
+    if hdrlen > 1:
+        df["stmtDate"] = " ".join(header.iloc[1,:].dropna().astype(str))
+    if hdrlen > 2:
+        df["clientBank"] = " ".join(header.iloc[2,:].dropna().astype(str))
+
     df["Debet"] = data["дебет"]
     df["Credit"] = data["кредит"]
     df["Comment"] = data["документ"] + '|' + data["операция"] + "|" + data["операция.1"]
@@ -194,6 +220,15 @@ def Type51HDR_3_process(
 
     df = pd.DataFrame(columns=COLUMNS)
     df["entryDate"] = data["дата"]
+
+    hdrlen = 0 if header.empty else header.shape[0]
+    if hdrlen > 0:
+        df["clientName"] = header.iloc[0,:].dropna().iloc[0]
+    if hdrlen > 2:
+        df["stmtDate"] = " ".join(header.iloc[2,:].dropna().astype(str))
+    if hdrlen > 3:
+        df["clientBank"] = " ".join(header.iloc[3,:].dropna().astype(str))
+
     df["Debet"] = data["дебетсумма"]
     df["Credit"] = data["кредитсумма"]
     df["Comment"] = data["документ"]
@@ -238,6 +273,15 @@ def Type51HDR_4_process(
 
     df = pd.DataFrame(columns=COLUMNS)
     df["entryDate"] = data["дата"]
+
+    hdrlen = 0 if header.empty else header.shape[0]
+    if hdrlen > 0:
+        df["clientName"] = header.iloc[0,:].dropna().iloc[0]
+    if hdrlen > 1:
+        df["stmtDate"] = " ".join(header.iloc[2,:].dropna().astype(str))
+    if hdrlen > 2:
+        df["clientBank"] = " ".join(header.iloc[3,:].dropna().astype(str))
+            
     df["Debet"] = data.apply(
         lambda row: row["сумма"]
         if str(row["дебет"]).startswith("51")
