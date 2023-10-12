@@ -57,7 +57,6 @@ def transformDF(df):
     return df
 
 
-
 def dalyEntriesbyClient(ddf, uidsdir):
     divisions = None
     if uidsdir is not None:
@@ -90,9 +89,28 @@ def dalyEntriesbyClient(ddf, uidsdir):
     dfDate.columns = ["clientID", "YEAR", "MONTH", "Entries"]  # не работает!!!!
     return dfDate
 
+
 def periodsGroups(ddf):
-    ddf = ddf.replace(r"\d", "X", regex=True).replace(r"(\s+[Яя]нварь|[Фф]евраль|[Мм]арт|[Аа]прель|[Мм]ай|[Ии]юнь|[Ии]юль|[Аа]вгуст|[Сс]ентябрь|[Оо]ктябрь|[Нн]оябрь|[Дд]екабрь\s+)", "_MONTH_", regex=True)
+    ddf = (
+        ddf.replace(r"\d", "X", regex=True)
+        .replace(
+            r"(\s+[Яя]нварь|[Фф]евраль|[Мм]арт|[Аа]прель|[Мм]ай|[Ии]юнь|[Ии]юль|[Аа]вгуст|[Сс]ентябрь|[Оо]ктябрь|[Нн]оябрь|[Дд]екабрь\s+)",
+            "_MONTH_",
+            regex=True,
+        )
+        .replace(
+            r"(\s*г.\s*)",
+            "",
+            regex=True,
+        )
+        .replace(
+            r"\s*_MONTH_\s*",
+            "_MONTH_",
+            regex=True
+        )
+    )
     return ddf.groupby(["stmtDate"])["stmtDate"].aggregate("count")
+
 
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -151,15 +169,15 @@ def main():
     ddf = dd.read_csv(inname + "/*.csv", blocksize=None, dtype=str)  # type: ignore
 
     dfRes = periodsGroups(ddf)
-    #dfRes = dalyEntriesbyClient(ddf, uidsdir)
+    # dfRes = dalyEntriesbyClient(ddf, uidsdir)
 
     dd.to_csv(dfRes, outname, single_file=True, encoding="utf-8")  # type: ignore
 
     print("Result produced")
-    #if bTrans:
+    # if bTrans:
     #    print("Start transformation")
     #    transform_csv(transcvname, inname, csv_file_delimeter)
-    #print("FINISHED")
+    # print("FINISHED")
 
 
 main()
