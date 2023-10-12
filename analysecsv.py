@@ -91,12 +91,13 @@ def dalyEntriesbyClient(ddf, uidsdir):
     return dfDate
 
 def periodsGroups(ddf):
-    dfPeriods = ddf.groupby(["stmtDate"])
+    ddf = ddf.replace(r"\d", "X", regex=True).replace(r"(\s+[Яя]нварь|[Фф]евраль|[Мм]арт|[Аа]прель|[Мм]ай|[Ии]юнь|[Ии]юль|[Аа]вгуст|[Сс]ентябрь|[Оо]ктябрь|[Нн]оябрь|[Дд]екабрь\s+)", "_MONTH_", regex=True)
+    dfPeriods = ddf.groupby(["stmtDate"])["stmtDate"].aggregate("count")
     return dfPeriods
 
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", "--input", default="./data/DataSplit", help="Input folder")
+    parser.add_argument("-i", "--input", default="./data/DS1", help="Input folder")
     parser.add_argument(
         "-o", "--output", default="./data/result.csv", help="Resulting file"
     )
@@ -150,8 +151,8 @@ def main():
 
     ddf = dd.read_csv(inname + "/*.csv", blocksize=None, dtype=str)  # type: ignore
 
-    #dfRes = periodsGroups(ddf)
-    dfRes = dalyEntriesbyClient(ddf, uidsdir)
+    dfRes = periodsGroups(ddf)
+    #dfRes = dalyEntriesbyClient(ddf, uidsdir)
 
     dd.to_csv(dfRes, outname, single_file=True, encoding="utf-8")  # type: ignore
 
