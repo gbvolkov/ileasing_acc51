@@ -92,8 +92,7 @@ def dalyEntriesbyClient(ddf, uidsdir):
 
 def periodsGroups(ddf):
     ddf = ddf.replace(r"\d", "X", regex=True).replace(r"(\s+[Яя]нварь|[Фф]евраль|[Мм]арт|[Аа]прель|[Мм]ай|[Ии]юнь|[Ии]юль|[Аа]вгуст|[Сс]ентябрь|[Оо]ктябрь|[Нн]оябрь|[Дд]екабрь\s+)", "_MONTH_", regex=True)
-    dfPeriods = ddf.groupby(["stmtDate"])["stmtDate"].aggregate("count")
-    return dfPeriods
+    return ddf.groupby(["stmtDate"])["stmtDate"].aggregate("count")
 
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
