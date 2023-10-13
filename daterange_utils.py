@@ -41,60 +41,58 @@ def get_last_day_of_month(year: int, mon: int)->datetime:
     return nextmon - timedelta(days=nextmon.day)    
 
 def get_date_range(headerstr: str) -> list[str]:
-    dtrange = []
-    match REqual(headerstr):
-        case rt.RE_MONTHRANGE:
-            dtrange = re.findall(rt.RE_MONTHRANGE, headerstr, re.MULTILINE)
-            monfrom=MONTHS[dtrange[0][0].lower()]
-            yearfrom=int(dtrange[0][1])
-            monto=MONTHS[dtrange[0][2].lower()]
-            yearto=int(dtrange[0][3])
-            datefrom = datetime(yearfrom, monfrom, 1)
-            nextmon = datetime(yearto, monto, 28) + timedelta(days=4)
-            dateto = nextmon - timedelta(days=nextmon.day)
-            dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
-            print(dtrange)
-        case rt.RE_MONTH:
-            dtrange = re.findall(rt.RE_MONTH, headerstr, re.MULTILINE)
-            monfrom=MONTHS[dtrange[0][0].lower()]
-            yearfrom=int(dtrange[0][1])
-            datefrom = datetime(yearfrom, monfrom, 1)
-            nextmon = datetime(yearfrom, monfrom, 28) + timedelta(days=4)
-            dateto = nextmon - timedelta(days=nextmon.day)
-            dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
-            print(dtrange)
-        case rt.RE_DATERANGE:
-            dtrange = re.findall(rt.RE_DATERANGE, headerstr, re.MULTILINE)
-            dayfrom=int(dtrange[0][0])
-            monfrom=int(dtrange[0][1])
-            yearfrom=int(dtrange[0][2])
-            dayto=int(dtrange[0][3])
-            monto=int(dtrange[0][4])
-            yearto=int(dtrange[0][5])
-            datefrom = datetime(yearfrom, monfrom, dayfrom)
-            dateto = datetime(yearto, monto, dayto)
-            dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
-            print(dtrange)
-        case rt.RE_YEAR:
-            dtrange = re.findall(rt.RE_YEAR, headerstr, re.MULTILINE)
-            year=int(dtrange[0][0])
-            datefrom = datetime(year, 1, 1)
-            dateto = datetime(year, 12, 31)
-            dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
-            print(dtrange)
-        case rt.RE_QUART:
-            dtrange = re.findall(rt.RE_QUART, headerstr, re.MULTILINE)
-            quart=int(dtrange[0][0])
-            year=int(dtrange[0][1])
-            monfrom = QUARTS[quart][0]
-            monto = QUARTS[quart][1]
-            datefrom = datetime(year, monfrom, 1)
-            nextmon = datetime(year, monto, 28) + timedelta(days=4)
-            dateto = nextmon - timedelta(days=nextmon.day)
-            dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
-            print(dtrange)
-        case _:
-            dtrange = [headerstr]
+    dtrange = ['00-00-0000', '00-00-0000']
+    try:
+        match REqual(headerstr):
+            case rt.RE_MONTHRANGE:
+                dtrange = re.findall(rt.RE_MONTHRANGE, headerstr, re.MULTILINE)
+                monfrom=MONTHS[dtrange[0][0].lower()]
+                yearfrom=int(dtrange[0][1])
+                monto=MONTHS[dtrange[0][2].lower()]
+                yearto=int(dtrange[0][3])
+                datefrom = datetime(yearfrom, monfrom, 1)
+                nextmon = datetime(yearto, monto, 28) + timedelta(days=4)
+                dateto = nextmon - timedelta(days=nextmon.day)
+                dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
+            case rt.RE_MONTH:
+                dtrange = re.findall(rt.RE_MONTH, headerstr, re.MULTILINE)
+                monfrom=MONTHS[dtrange[0][0].lower()]
+                yearfrom=int(dtrange[0][1])
+                datefrom = datetime(yearfrom, monfrom, 1)
+                nextmon = datetime(yearfrom, monfrom, 28) + timedelta(days=4)
+                dateto = nextmon - timedelta(days=nextmon.day)
+                dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
+            case rt.RE_DATERANGE:
+                dtrange = re.findall(rt.RE_DATERANGE, headerstr, re.MULTILINE)
+                dayfrom=int(dtrange[0][0])
+                monfrom=int(dtrange[0][1])
+                yearfrom=int(dtrange[0][2])
+                dayto=int(dtrange[0][3])
+                monto=int(dtrange[0][4])
+                yearto=int(dtrange[0][5])
+                datefrom = datetime(yearfrom, monfrom, dayfrom)
+                dateto = datetime(yearto, monto, dayto)
+                dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
+            case rt.RE_YEAR:
+                dtrange = re.findall(rt.RE_YEAR, headerstr, re.MULTILINE)
+                year=int(dtrange[0][0])
+                datefrom = datetime(year, 1, 1)
+                dateto = datetime(year, 12, 31)
+                dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
+            case rt.RE_QUART:
+                dtrange = re.findall(rt.RE_QUART, headerstr, re.MULTILINE)
+                quart=int(dtrange[0][0])
+                year=int(dtrange[0][1])
+                monfrom = QUARTS[quart][0]
+                monto = QUARTS[quart][1]
+                datefrom = datetime(year, monfrom, 1)
+                nextmon = datetime(year, monto, 28) + timedelta(days=4)
+                dateto = nextmon - timedelta(days=nextmon.day)
+                dtrange = [datefrom.strftime("%d-%m-%Y"), dateto.strftime("%d-%m-%Y")]
+            case _:
+                dtrange = [headerstr, headerstr]
+    except Exception:
+        return ['00-00-0000', '00-00-0000']
     return dtrange
 
 

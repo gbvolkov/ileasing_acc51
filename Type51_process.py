@@ -3,10 +3,11 @@ from datetime import datetime
 from io import TextIOWrapper
 import os
 import numpy as np
+from daterange_utils import get_date_range, normalise_range_str
 
 from const import COLUMNS
 
-def getParametersValue(data: pd.DataFrame, col: str | int, lable: str, idx: int) -> pd.Series:
+def get_parameters_value(data: pd.DataFrame, col: str | int, lable: str, idx: int) -> pd.Series:
     value = pd.Series()
     rowval = data[data[col].astype(str).str.startswith(lable)].replace(r"\s+", "", regex=True).replace("", np.nan)
     if not rowval.empty:
@@ -42,6 +43,7 @@ def Type51HDR_process(
         df["clientName"] = header.iloc[0,:].dropna().iloc[0]
     if hdrlen > 1:
         df["stmtDate"] = " ".join(header.iloc[1,:].dropna().astype(str))
+        df[["stmtFrom", "stmtTo"]] = df["stmtDate"].apply(lambda x: get_date_range(normalise_range_str(x))[:2]).to_list()
     if hdrlen > 2:
         df["clientBank"] = " ".join(header.iloc[2,:].dropna().astype(str))
 
@@ -72,8 +74,8 @@ def Type51HDR_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = getParametersValue(data, "период", "Сальдо на начало", 0)
-    closingBalance = getParametersValue(data, "период", "Обороты за период и сальдо на конец", -1)
+    openBalance = get_parameters_value(data, "период", "Сальдо на начало", 0)
+    closingBalance = get_parameters_value(data, "период", "Обороты за период и сальдо на конец", -1)
 
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[openBalance.size-1]
@@ -111,6 +113,7 @@ def Type51HDR_1_process(
         df["clientName"] = header.iloc[3,:].dropna().iloc[0]
     if hdrlen > 2:
         df["stmtDate"] = " ".join(header.iloc[2,:].dropna().astype(str))
+        df[["stmtFrom", "stmtTo"]] = df["stmtDate"].apply(lambda x: get_date_range(normalise_range_str(x))[:2]).to_list()
 
     df["clientAcc"] = data.apply(
         lambda row: row["аналитикадебет"]
@@ -134,9 +137,9 @@ def Type51HDR_1_process(
         df["codeIntCr"] = data["оборотыкредит"]
 
 
-    openBalance = getParametersValue(header, 0, "Начальное сальдо", 0)
-    closingBalance = getParametersValue(header, 0, "Конечное сальдо", -1)
-    turnovers = getParametersValue(header, 0, "Обороты", -1)
+    openBalance = get_parameters_value(header, 0, "Начальное сальдо", 0)
+    closingBalance = get_parameters_value(header, 0, "Конечное сальдо", -1)
+    turnovers = get_parameters_value(header, 0, "Обороты", -1)
 
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[1]
@@ -175,6 +178,7 @@ def Type51HDR_2_process(
         df["clientName"] = header.iloc[0,:].dropna().iloc[0]
     if hdrlen > 1:
         df["stmtDate"] = " ".join(header.iloc[1,:].dropna().astype(str))
+        df[["stmtFrom", "stmtTo"]] = df["stmtDate"].apply(lambda x: get_date_range(normalise_range_str(x))[:2]).to_list()
     if hdrlen > 2:
         df["clientBank"] = " ".join(header.iloc[2,:].dropna().astype(str))
 
@@ -188,8 +192,8 @@ def Type51HDR_2_process(
         df["codeIntCr"] = data["кредитсчет"]
 
 
-    openBalance = getParametersValue(data, "дата", "Сальдо на начало", 0)
-    closingBalance = getParametersValue(data, "дата", "Обороты и сальдо на конец", -1)
+    openBalance = get_parameters_value(data, "дата", "Сальдо на начало", 0)
+    closingBalance = get_parameters_value(data, "дата", "Обороты и сальдо на конец", -1)
     
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[openBalance.size-1]
@@ -226,6 +230,7 @@ def Type51HDR_3_process(
         df["clientName"] = header.iloc[0,:].dropna().iloc[0]
     if hdrlen > 2:
         df["stmtDate"] = " ".join(header.iloc[2,:].dropna().astype(str))
+        df[["stmtFrom", "stmtTo"]] = df["stmtDate"].apply(lambda x: get_date_range(normalise_range_str(x))[:2]).to_list()
     if hdrlen > 3:
         df["clientBank"] = " ".join(header.iloc[3,:].dropna().astype(str))
 
@@ -238,9 +243,9 @@ def Type51HDR_3_process(
     if "кредитсчет" in data.columns:
         df["codeIntCr"] = data["кредитсчет"]
 
-    openBalance = getParametersValue(data, "дата", "Сальдо на начало", 0)
-    closingBalance = getParametersValue(data, "дата", "Сальдо на конец", -1)
-    turnovers = getParametersValue(data, "дата", "Обороты за период", -1)
+    openBalance = get_parameters_value(data, "дата", "Сальдо на начало", 0)
+    closingBalance = get_parameters_value(data, "дата", "Сальдо на конец", -1)
+    turnovers = get_parameters_value(data, "дата", "Обороты за период", -1)
 
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[1]
@@ -279,6 +284,7 @@ def Type51HDR_4_process(
         df["clientName"] = header.iloc[0,:].dropna().iloc[0]
     if hdrlen > 1:
         df["stmtDate"] = " ".join(header.iloc[2,:].dropna().astype(str))
+        df[["stmtFrom", "stmtTo"]] = df["stmtDate"].apply(lambda x: get_date_range(normalise_range_str(x))[:2]).to_list()
     if hdrlen > 2:
         df["clientBank"] = " ".join(header.iloc[3,:].dropna().astype(str))
             
@@ -315,9 +321,9 @@ def Type51HDR_4_process(
         df["codeIntCr"] = data["кредит"]
 
 
-    openBalance = getParametersValue(data, "дата", "Входящий остаток", 0)
-    closingBalance = getParametersValue(data, "дата", "Исходящий остаток", -1)
-    turnovers = getParametersValue(data, "дата", "Обороты за период", -1)
+    openBalance = get_parameters_value(data, "дата", "Входящий остаток", 0)
+    closingBalance = get_parameters_value(data, "дата", "Исходящий остаток", -1)
+    turnovers = get_parameters_value(data, "дата", "Обороты за период", -1)
 
     if openBalance.size > 1:
         df["openBalance"] = openBalance.iloc[1]

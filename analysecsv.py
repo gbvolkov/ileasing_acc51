@@ -1,5 +1,4 @@
-from daterange_utils import get_date_range
-from daterange_utils import normalise_range_str
+from daterange_utils import get_date_range, normalise_range_str
 import pandas as pd
 import re
 import os
