@@ -202,7 +202,7 @@ def main():
         "\ndelimeter:",
         csv_file_delimeter,
     )
-    regexTest()
+    #regexTest()
 
     ddf = dd.read_csv(inname + "/*.csv", blocksize=None, dtype=str)  # type: ignore
 
