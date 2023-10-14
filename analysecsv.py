@@ -141,10 +141,10 @@ def periodsGroups(ddf):
             "_MONTH_",
             regex=True,
         )
-        .replace(r"(\s*г.\s*)", "", regex=True)
+        .replace(r"(\s*г\.\s*)", "", regex=True)
         .replace(r"\s*_MONTH_\s*", "_MONTH_", regex=True)
         .replace(r"/", ".", regex=True)
-        .replace(r"с\s*", "", regex=True)
+        .replace(r"с\s+", "", regex=True)
     )
     return ddf.groupby(["stmtDate"])["stmtDate"].aggregate("count")
 

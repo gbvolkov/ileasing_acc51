@@ -108,7 +108,7 @@ def normalise_range_str(rangestr: str) -> str:
     #    "_MONTH_",
     #    rangestr,
     #)
-    rangestr = re.sub(r"(\s*г.\s*)", "", rangestr)
+    rangestr = re.sub(r"(\s*г\.\s*)", "", rangestr)
     rangestr = re.sub(r"/", ".", rangestr)
     rangestr = re.sub(r"с\s*", "", rangestr)
     return rangestr
