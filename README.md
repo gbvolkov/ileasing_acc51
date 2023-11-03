@@ -5,3 +5,5 @@ For pdf table extraction if uses camelot library.
 Current issues with statements is accuracy of footers and headers recognition (I would guess, slightly different approach for the tables extraction would be usefull)
 
 The resulting csv files could be used for different data analysis or model training.
+
+It's an fully open sourced, so you may clone and use it for free.
