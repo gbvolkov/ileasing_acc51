@@ -13,6 +13,7 @@ from argparse import (
 )
 import sys
 
+
 def transform_csv(outname, inname, csv_file_delimeter):
     with open(outname, "w+", encoding="utf-8", newline="") as fout:
         with open(inname, "r", encoding="utf-8") as fin:
@@ -107,7 +108,7 @@ def regexTest():
     headarr = [normalise_range_str(head) for head in headarr]
     dates = [get_date_range(head) for head in headarr]
     print(dates)
-    #for head in headarr:
+    # for head in headarr:
     #    head = re.sub(r"Карточка\s+счета\s+.*\s+за\s+", "", head)
     #    head = re.sub(r"Карточка\s+счета\s+.*\s+с\s+", "", head)
     #    head = re.sub(r"[Пп]ериод[:]?\s*", "", head)
@@ -202,7 +203,7 @@ def main():
         "\ndelimeter:",
         csv_file_delimeter,
     )
-    #regexTest()
+    # regexTest()
 
     ddf = dd.read_csv(inname + "/*.csv", blocksize=None, dtype=str)  # type: ignore
 
