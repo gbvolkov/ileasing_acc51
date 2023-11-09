@@ -158,29 +158,21 @@ def clean_data(row):
         .astype(str)
     )
 
-
-def replace_empty_with_nan_and_count(df: pd.DataFrame) -> pd.Series:
-    return df.replace(r'^\s*$', np.nan, regex=True).count()
-
 def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
-    PERCENTAGE_THRESHOLD = 50.0
-    MAX_ROWS = 50
-
-    cols_full = replace_empty_with_nan_and_count(df)
-    df_head = df.iloc[:MAX_ROWS]
-    df_head = df_head.fillna("").astype(str)
+    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
+    df_head = df.iloc[:50].fillna("").astype(str)
     df_head = df_head.apply(clean_data)
-    max_not_na = (df_head != "").sum(axis=1).max()
-    min_count = int((PERCENTAGE_THRESHOLD * max_not_na / 100) + 1)
+    maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
+    min_count = int((50.0 * maxnotna / 100) + 1)
 
-    def process_row(idx: int) -> dict:
+    results = []
+    for idx in range(len(df_head.index) - 1):
         header1 = df_head.iloc[idx]
-        if (header1 != "").sum() >= min_count:
-            cols_prev = replace_empty_with_nan_and_count(df.iloc[:idx])
-            cols = cols_full - cols_prev
+        if header1.mask(header1 == "").notna().sum() >= min_count:
+            cols_prev = df.iloc[:idx].replace(r'^\s*$', np.nan, regex=True).count()
+            cols = cols_full-cols_prev
             header2 = df_head.iloc[idx + 1]
-            header = pd.concat([header1, header2, cols], axis=1)
-            header = header.apply(
+            header = pd.concat([header1, header2, cols], axis=1).apply(
                 lambda x: ".".join(
                     [
                         y
@@ -193,23 +185,21 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
                 ),
                 axis=1,
             )
-            cnas = (header == "").sum()
-            rowidx = df_head.index[idx]
-            return {"_idx": rowidx, "_cnas": cnas, "_header": header}
-        return dict(zip(["_idx", "_cnas", "_header"], [None]*len(["_idx", "_cnas", "_header"])))
+            cnas = header.mask(header == "").isna().sum()
+            rowidx = df_head.iloc[idx : idx + 1].index[0]
+            results.append({"_idx": rowidx, "_cnas": cnas, "_header": header})
 
-    results = [process_row(idx) for idx in df_head.index]
-    results = [result for result in results if result is not None]
-    result_df = pd.DataFrame(results)
-    min_cnas_idx = result_df._cnas.idxmin()
-    result = result_df.loc[min_cnas_idx]
+    result = pd.DataFrame(results)
+    min_cnas_idx = result._cnas.idxmin()
+    result = result.loc[min_cnas_idx]
     header = result._header
-    ncols = (header != "").sum()
+    ncols = header.mask(header == "").notna().sum()
     return (
         result._idx,
         ncols,
-        header[header != ""].index.to_list(),
+        header.mask(header == "").dropna().index.to_list(),
     )
+
 
 def get_table_range(
     df: pd.DataFrame,
