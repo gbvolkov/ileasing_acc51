@@ -196,7 +196,7 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
             cnas = (header == "").sum()
             rowidx = df_head.index[idx]
             return {"_idx": rowidx, "_cnas": cnas, "_header": header}
-        return None # type: ignore
+        return dict(zip(["_idx", "_cnas", "_header"], [None]*len(["_idx", "_cnas", "_header"])))
 
     results = [process_row(idx) for idx in df_head.index]
     results = [result for result in results if result is not None]
