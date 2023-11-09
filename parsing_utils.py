@@ -214,7 +214,7 @@ def get_last_column_index(df: pd.DataFrame, threshold: float) -> int:
     return last_column_index # type: ignore
 
 def remove_nan_columns(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
-    return df.loc[:, :get_last_column_index(df, 0.9)]
+    return df.iloc[:, :get_last_column_index(df, threshold)+1]
 
 def find_last_row_index(df: pd.DataFrame, firstrowidx: int, nheadercols: int) -> int:
     for idx in range(len(df.index) - 1, df.index.get_loc(firstrowidx), -1):
