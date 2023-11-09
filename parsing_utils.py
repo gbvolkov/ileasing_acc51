@@ -205,13 +205,7 @@ import pandas as pd
 
 def get_last_column_index(df: pd.DataFrame, threshold: float) -> int:
     nan_percentages = df.isnull().mean()
-    last_column_index = None
-
-    for i, nan_percentage in enumerate(nan_percentages):
-        if nan_percentage < threshold:
-            last_column_index = i
-
-    return last_column_index # type: ignore
+    return (nan_percentages < threshold).last_valid_index() # type: ignore
 
 def remove_nan_columns(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
     return df.iloc[:, :get_last_column_index(df, threshold)+1]
