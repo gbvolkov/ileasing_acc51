@@ -149,36 +149,29 @@ def set_data_columns(df) -> pd.DataFrame:
 Сливаем каждую строку со следующей
 В результирующем датасете ищем первую строку с минимальным количеством нулов
 """
-def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
-    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
-    df_head = df.iloc[:50].fillna("").astype(str)
-    result = pd.DataFrame(columns=["_idx", "_cnas", "_header"])
-    axis = 0
-    # Delete rows containing either 60% or more than 60% NaN Values
-    perc = 50.0
-    df_head = (
-        df_head.replace("\n", "")
+def clean_data(row):
+    return (
+        row.replace("\n", "")
         .replace(r"\s+", "", regex=True)
         .replace(r"\d+\.?\d*", "", regex=True)
         .fillna("")
         .astype(str)
     )
-    maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
-    min_count = int((perc * maxnotna / 100) + 1)
 
+def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
+    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
+    df_head = df.iloc[:50].fillna("").astype(str)
+    df_head = df_head.apply(clean_data)
+    maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
+    min_count = int((50.0 * maxnotna / 100) + 1)
+
+    results = []
     for idx in range(len(df_head.index) - 1):
-        header1 = (
-            df_head.iloc[idx]
-            .replace("\n", "")
-            .replace(r"\s+", "", regex=True)
-            .replace(r"\d+\.?\d*", "", regex=True)
-            .fillna("")
-            .astype(str)
-        )
+        header1 = df_head.iloc[idx]
         if header1.mask(header1 == "").notna().sum() >= min_count:
             cols_prev = df.iloc[:idx].replace(r'^\s*$', np.nan, regex=True).count()
             cols = cols_full-cols_prev
-            header2 = df_head.iloc[idx + 1].fillna("").astype(str)
+            header2 = df_head.iloc[idx + 1]
             header = pd.concat([header1, header2, cols], axis=1).apply(
                 lambda x: ".".join(
                     [
@@ -192,28 +185,17 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
                 ),
                 axis=1,
             )
-            #header = pd.concat([header1, header2], axis=1).apply(
-            #    lambda x: ".".join([y for y in x if y]), axis=1
-            #)
             cnas = header.mask(header == "").isna().sum()
             rowidx = df_head.iloc[idx : idx + 1].index[0]
-            result = pd.concat(
-                [
-                    result,
-                    pd.DataFrame([{"_idx": rowidx, "_cnas": cnas, "_header": header}]),
-                ]
-            )
-    result = result[
-        result._idx == result[result._cnas == result._cnas.min()]._idx.min()
-    ]
-    if result._header.size > 0:
-        header = result._header[0]
-        ncols = header.mask(header == "").notna().sum()
-    else:
-        header = pd.DataFrame()
-        ncols = 0
+            results.append({"_idx": rowidx, "_cnas": cnas, "_header": header})
+
+    result = pd.DataFrame(results)
+    min_cnas_idx = result._cnas.idxmin()
+    result = result.loc[min_cnas_idx]
+    header = result._header
+    ncols = header.mask(header == "").notna().sum()
     return (
-        result[result._cnas == result._cnas.min()]._idx.min(),
+        result._idx,
         ncols,
         header.mask(header == "").dropna().index.to_list(),
     )

@@ -3,5 +3,6 @@
 	"[python]": {
 		"editor.defaultFormatter": "ms-python.black-formatter"
 	},
-	"python.formatting.provider": "none"
+	"python.formatting.provider": "none",
+	"sourcery.token": "user_X2hAfDADVt_KAwx6vShBLmJjm6keqJEOtU1Y_3L9qrTN3Xjl_9nBVLUroj0"
 }
