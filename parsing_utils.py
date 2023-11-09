@@ -171,7 +171,7 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     df_head = df_head.fillna("").astype(str)
     df_head = df_head.apply(clean_data)
     max_not_na = (df_head != "").sum(axis=1).max()
-    min_count = int((MAX_ROWS * max_not_na / PERCENTAGE_THRESHOLD) + 1)
+    min_count = int((PERCENTAGE_THRESHOLD * max_not_na / 100) + 1)
 
     def process_row(idx: int) -> dict:
         header1 = df_head.iloc[idx]

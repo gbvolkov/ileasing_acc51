@@ -190,7 +190,7 @@ def get_arguments():
     )
     parser.add_argument(
         "--pdf",
-        default=True,
+        default=False,
         action=BooleanOptionalAction,
         help="Weather to include pdf (--no-pdf opposite option)",
     )
