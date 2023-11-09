@@ -159,7 +159,8 @@ def clean_data(row):
     )
 
 def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
-    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
+    df = df.replace(r'^\s*$', np.nan, regex=True)
+    cols_full = df.count()
     df_head = df.iloc[:50].fillna("").astype(str)
     df_head = df_head.apply(clean_data)
     maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
@@ -168,8 +169,8 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     results = []
     for idx in range(len(df_head.index) - 1):
         header1 = df_head.iloc[idx]
-        if header1.mask(header1 == "").notna().sum() >= min_count:
-            cols_prev = df.iloc[:idx].replace(r'^\s*$', np.nan, regex=True).count()
+        if header1.notna().sum() >= min_count:
+            cols_prev = df.iloc[:idx].count()
             cols = cols_full-cols_prev
             header2 = df_head.iloc[idx + 1]
             header = pd.concat([header1, header2, cols], axis=1).apply(
@@ -185,7 +186,7 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
                 ),
                 axis=1,
             )
-            cnas = header.mask(header == "").isna().sum()
+            cnas = header.isna().sum()
             rowidx = df_head.iloc[idx : idx + 1].index[0]
             results.append({"_idx": rowidx, "_cnas": cnas, "_header": header})
 
@@ -193,11 +194,11 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     min_cnas_idx = result._cnas.idxmin()
     result = result.loc[min_cnas_idx]
     header = result._header
-    ncols = header.mask(header == "").notna().sum()
+    ncols = header.notna().sum()
     return (
         result._idx,
         ncols,
-        header.mask(header == "").dropna().index.to_list(),
+        header.dropna().index.to_list(),
     )
 
 
