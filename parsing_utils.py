@@ -201,8 +201,20 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     )
 
 
+import pandas as pd
+
+def get_last_column_index(df: pd.DataFrame, threshold: float) -> int:
+    nan_percentages = df.isnull().mean()
+    last_column_index = None
+
+    for i, nan_percentage in enumerate(nan_percentages):
+        if nan_percentage < threshold:
+            last_column_index = i
+
+    return last_column_index # type: ignore
+
 def remove_nan_columns(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
-    return df.loc[:, df.isnull().mean() < threshold]
+    return df.loc[:, :get_last_column_index(df, 0.9)]
 
 def find_last_row_index(df: pd.DataFrame, firstrowidx: int, nheadercols: int) -> int:
     for idx in range(len(df.index) - 1, df.index.get_loc(firstrowidx), -1):
