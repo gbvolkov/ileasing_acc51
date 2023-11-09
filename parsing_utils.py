@@ -164,41 +164,25 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     df_head = df_head.apply(clean_data)
     maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
     min_count = int((50.0 * maxnotna / 100) + 1)
+    cols_prev = df.replace(r'^\s*$', np.nan, regex=True).count()
 
-    results = []
-    for idx in range(len(df_head.index) - 1):
-        header1 = df_head.iloc[idx]
-        if header1.mask(header1 == "").notna().sum() >= min_count:
-            cols_prev = df.iloc[:idx].replace(r'^\s*$', np.nan, regex=True).count()
-            cols = cols_full-cols_prev
-            header2 = df_head.iloc[idx + 1]
-            header = pd.concat([header1, header2, cols], axis=1).apply(
-                lambda x: ".".join(
-                    [
-                        y
-                        for y in x[:2]
-                        if y
-                        or not x.iloc[0]
-                        and not x.iloc[1]
-                        and x.iloc[2] > 0
-                    ]
-                ),
-                axis=1,
-            )
-            cnas = header.mask(header == "").isna().sum()
-            rowidx = df_head.iloc[idx : idx + 1].index[0]
-            results.append({"_idx": rowidx, "_cnas": cnas, "_header": header})
+    def join_headers(x):
+        return ".".join([y for y in x[:2] if y or not x.iloc[0] and not x.iloc[1] and x.iloc[2] > 0])
 
-    result = pd.DataFrame(results)
-    min_cnas_idx = result._cnas.idxmin()
-    result = result.loc[min_cnas_idx]
-    header = result._header
-    ncols = header.mask(header == "").notna().sum()
-    return (
-        result._idx,
-        ncols,
-        header.mask(header == "").dropna().index.to_list(),
-    )
+    results = [
+        {
+            "_idx": df_head.iloc[idx : idx + 1].index[0],
+            "_cnas": pd.concat([df_head.iloc[idx], df_head.iloc[idx + 1], cols_full-cols_prev], axis=1).apply(join_headers, axis=1).mask(lambda x: x == "").isna().sum(), # type: ignore
+            "_header": pd.concat([df_head.iloc[idx], df_head.iloc[idx + 1], cols_full-cols_prev], axis=1).apply(join_headers, axis=1)
+        }
+        for idx in range(len(df_head.index) - 1)
+        if df_head.iloc[idx].mask(lambda x: x == "").notna().sum() >= min_count # type: ignore
+    ]
+
+    min_cnas_idx = min(results, key=lambda x: x["_cnas"])
+    header = min_cnas_idx["_header"]
+    ncols = header.mask(lambda x: x == "").notna().sum()
+    return min_cnas_idx["_idx"], ncols, header.mask(lambda x: x == "").dropna().index.to_list()
 
 
 import pandas as pd
