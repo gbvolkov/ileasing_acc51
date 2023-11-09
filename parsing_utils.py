@@ -202,7 +202,7 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
 
 
 import pandas as pd
- 
+
 def get_last_column_index(df: pd.DataFrame, threshold: float) -> int:
     nan_percentages = df.isnull().mean()
     last_column_index = None
