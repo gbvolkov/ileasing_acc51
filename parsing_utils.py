@@ -201,53 +201,37 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     )
 
 
-def get_table_range(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    lastrow = len(df.index) - 1
-    ncols = len(df.columns)
-    footer = pd.DataFrame()
+def remove_nan_columns(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
+    return df.loc[:, df.isnull().mean() < threshold]
 
+def find_last_row_index(df: pd.DataFrame, firstrowidx: int, nheadercols: int) -> int:
+    for idx in range(len(df.index) - 1, df.index.get_loc(firstrowidx), -1):
+        cnavalues = df.iloc[idx].isnull().sum()
+        if (nheadercols - cnavalues) * 100 / nheadercols > 47 and not all(df.iloc[idx][nheadercols - 3 :].isnull()):
+            return df.iloc[idx : idx + 1].index[0] # type: ignore
+    return firstrowidx + 1
+
+def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    return df.dropna(axis=1, how="all").dropna(axis=0, how="all")
+
+def get_table_range(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    lastrow = len(df.index) - 1
     firstrowidx, nheadercols, headercols = find_header_row(df)
 
     if nheadercols > 0:
-        # Удаляем из хвоста все столбцы, где больше 90% значений NaN
-        partialColumns = df.isnull().sum() > lastrow * 0.9
-        for idx in range(len(partialColumns.index) - 1, 0, -1):
-            if not partialColumns.iloc[idx]:
-                break
-            ncols -= 1
-        dfFilled = df.iloc[:, :ncols]
-
-        lastrowidx = firstrowidx + 1  # type: ignore
-
-        for idx in range(len(df.index) - 1, df.index.get_loc(firstrowidx), -1):
-            cnavalues = dfFilled.iloc[idx].isnull().sum()
-            if (ncols - cnavalues) * 100 / nheadercols > 47 and not all(
-                dfFilled.iloc[idx][ncols - 3 :].isnull()
-            ):
-                lastrow = idx
-                lastrowidx = df.iloc[lastrow : lastrow + 1].index[0]
-                break
-        header = df.loc[: firstrowidx - 1].dropna(axis=1, how="all").dropna(axis=0, how="all")  # type: ignore
-        footer = df.loc[lastrowidx + 1 :].dropna(axis=1, how="all").dropna(axis=0, how="all")  # type: ignore
-        # df = df.loc[firstrowidx : lastrowidx, headercols]
+        df = remove_nan_columns(df, 0.9)
+        lastrowidx = find_last_row_index(df, firstrowidx, nheadercols)
+        header = clean_dataframe(df.loc[: firstrowidx - 1])
+        footer = clean_dataframe(df.loc[lastrowidx + 1 :])
         null_cols = df.loc[firstrowidx:lastrowidx, headercols].isna().all()
         headercols = [headercols[colno] for colno, ifna in enumerate(null_cols) if not ifna]
-        
-
         df = df.loc[firstrowidx:, headercols]
-
-        data = df.dropna(axis=1, how="all").dropna(axis=0, how="all")
+        data = clean_dataframe(df)
     else:
         header = pd.DataFrame()
         data = pd.DataFrame()
         footer = pd.DataFrame()
-    return (
-        header,
-        data,
-        footer,
-    )
+    return header, data, footer
 
 
 def get_file_ext_list(isExcel, isPDF) -> list[str]:
