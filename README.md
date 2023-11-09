@@ -1,4 +1,4 @@
-# ileasing_acc51
+# statements_recognition
 It's an utility to recognise statements uploaded from remote banking and 1C applications (statement on account 51) at excel or pdf files and transform it to csv files.
 Currently it well recognises excel form 51 from 1C of a few formats (with accuracy circa 90%) and quite well recognises over 60 types of statements from different banks (well, excel is always better and faster than pdf).
 For pdf table extraction if uses camelot library.
