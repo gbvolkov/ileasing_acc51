@@ -160,7 +160,9 @@ def clean_data(row):
 
 def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
-    df_head = df.iloc[:50].fillna("").astype(str)
+    df_head_lines = df.iloc[:50]
+    df_check = df_head_lines.replace(r'^\s*$', np.nan, regex=True)
+    df_head = df_head_lines.fillna("").astype(str)
     df_head = df_head.apply(clean_data)
     maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
     min_count = int((50.0 * maxnotna / 100) + 1)
@@ -169,7 +171,7 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     for idx in range(len(df_head.index) - 1):
         header1 = df_head.iloc[idx]
         if header1.mask(header1 == "").notna().sum() >= min_count:
-            cols_prev = df.iloc[:idx].replace(r'^\s*$', np.nan, regex=True).count()
+            cols_prev = df_check.iloc[:idx].count()
             cols = cols_full-cols_prev
             header2 = df_head.iloc[idx + 1]
             header = pd.concat([header1, header2, cols], axis=1).apply(
