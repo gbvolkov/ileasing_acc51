@@ -169,31 +169,27 @@ def clean_and_mask(df: pd.DataFrame) -> pd.DataFrame:
     df = df.fillna("").astype(str).applymap(clean_str_data)
     return df.mask(df == "")
 
+def filter_and_add_subsequent_rows(df: pd.DataFrame, threshold: int) -> pd.DataFrame:
+    num_notna = df.notna().sum(axis=1)
+    filtered_df = df[num_notna > threshold]
+    selected_rows_index = filtered_df.index
+    subsequent_rows = df.loc[selected_rows_index[-1] + 1:] # type: ignore
+    return pd.concat([filtered_df, subsequent_rows])
+
 def create_header(df_head: pd.DataFrame, df_check: pd.DataFrame, cols_full: pd.Series, min_count: int) -> list:
     results = []
-    #df_head = df_head
-    for idx in range(len(df_head.index) - 1):
-        header1 = df_head.iloc[idx]
+    for idx in df_head.index[:-1]:
+        header1 = df_head.loc[idx]
         if header1.notna().sum() >= min_count:
             cols_prev = df_check.iloc[:idx].count()
             cols = cols_full-cols_prev
-            header2 = df_head.iloc[idx + 1]
-            header = pd.concat([header1.fillna("").astype(str), header2.fillna("").astype(str), cols], axis=1).apply(
-                lambda x: ".".join(
-                    [
-                        y
-                        for y in x[:2]
-                        if y
-                        or not x.iloc[0]
-                        and not x.iloc[1]
-                        and x.iloc[2] > 0
-                    ]
-                ),
-                axis=1,
-            )
-            cnas = header.isna().sum()
-            rowidx = df_head.iloc[idx : idx + 1].index[0]
-            results.append({"_idx": rowidx, "_cnas": cnas, "_header": header})
+            header2 = df_head.loc[idx + 1]
+            header = [
+                ".".join([y for y in x[:2] if y or not x[0] and not x[1] and x[2] > 0])
+                for x in pd.concat([header1.fillna("").astype(str), header2.fillna("").astype(str), cols], axis=1).itertuples(index=False, name=None)
+            ]
+            cnas = header.count(None) # type: ignore
+            results.append({"_idx": idx, "_cnas": cnas, "_header": pd.DataFrame(header)})
     return results
 
 def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
@@ -210,7 +206,7 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
     min_cnas_idx = result._cnas.idxmin()
     result = result.loc[min_cnas_idx]
     header = result._header
-    ncols = header.notna().sum()
+    ncols = header.notna().sum()[0]
     return (
         result._idx,
         ncols,
