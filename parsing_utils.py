@@ -177,8 +177,8 @@ def create_header(df_head: pd.DataFrame, df_check: pd.DataFrame, cols_full: pd.S
         if header1.notna().sum() >= min_count:
             cols_prev = df_check.iloc[:idx].count()
             cols = cols_full-cols_prev
-            header2 = df_head.iloc[idx + 1].fillna("").astype(str)
-            header = pd.concat([header1, header2, cols], axis=1).apply(
+            header2 = df_head.iloc[idx + 1]
+            header = pd.concat([header1.fillna("").astype(str), header2.fillna("").astype(str), cols], axis=1).apply(
                 lambda x: ".".join(
                     [
                         y
