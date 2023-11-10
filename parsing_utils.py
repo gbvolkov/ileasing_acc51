@@ -158,19 +158,22 @@ def clean_data(row):
         .astype(str)
     )
 
-def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
-    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
-    df_head_lines = df.iloc[:50]
-    df_check = df_head_lines.replace(r'^\s*$', np.nan, regex=True)
-    df_head = df_head_lines.fillna("").astype(str)
-    df_head = df_head.apply(clean_data)
-    maxnotna = df_head.mask(df_head == "").notna().sum(axis=1).max()
-    min_count = int((50.0 * maxnotna / 100) + 1)
+def clean_str_data(row: str):
+    row = row.replace("\n", "")
+    row = re.sub(r"\s+", "", row)
+    row = re.sub(r"\d+\.?\d*", "", row)
+    return row
 
+
+def clean_and_mask(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.fillna("").astype(str).applymap(clean_str_data)
+    return df.mask(df == "")
+
+def create_header(df_head: pd.DataFrame, df_check: pd.DataFrame, cols_full: pd.Series, min_count: int) -> list:
     results = []
     for idx in range(len(df_head.index) - 1):
         header1 = df_head.iloc[idx]
-        if header1.mask(header1 == "").notna().sum() >= min_count:
+        if header1.notna().sum() >= min_count:
             cols_prev = df_check.iloc[:idx].count()
             cols = cols_full-cols_prev
             header2 = df_head.iloc[idx + 1]
@@ -187,19 +190,30 @@ def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
                 ),
                 axis=1,
             )
-            cnas = header.mask(header == "").isna().sum()
+            cnas = header.isna().sum()
             rowidx = df_head.iloc[idx : idx + 1].index[0]
             results.append({"_idx": rowidx, "_cnas": cnas, "_header": header})
+    return results
+
+def find_header_row(df: pd.DataFrame) -> tuple[int, int, list[int]]:
+    cols_full = df.replace(r'^\s*$', np.nan, regex=True).count()
+    df_head_lines = df.iloc[:50]
+    df_check = df_head_lines.replace(r'^\s*$', np.nan, regex=True)
+    df_head = clean_and_mask(df_head_lines)
+    maxnotna = df_head.notna().sum(axis=1).max()
+    min_count = int((50.0 * maxnotna / 100) + 1)
+
+    results = create_header(df_head, df_check, cols_full, min_count)
 
     result = pd.DataFrame(results)
     min_cnas_idx = result._cnas.idxmin()
     result = result.loc[min_cnas_idx]
     header = result._header
-    ncols = header.mask(header == "").notna().sum()
+    ncols = header.notna().sum()
     return (
         result._idx,
         ncols,
-        header.mask(header == "").dropna().index.to_list(),
+        header.dropna().index.to_list(),
     )
 
 
