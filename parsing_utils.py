@@ -167,7 +167,7 @@ def clean_str_data(row: str):
 
 def clean_and_mask(df: pd.DataFrame) -> pd.DataFrame:
     df = df.fillna("").astype(str).applymap(clean_str_data)
-    return df.mask(df == "").fillna("").astype(str)
+    return df.mask(df == "")
 
 def create_header(df_head: pd.DataFrame, df_check: pd.DataFrame, cols_full: pd.Series, min_count: int) -> list:
     results = []
@@ -177,7 +177,7 @@ def create_header(df_head: pd.DataFrame, df_check: pd.DataFrame, cols_full: pd.S
         if header1.notna().sum() >= min_count:
             cols_prev = df_check.iloc[:idx].count()
             cols = cols_full-cols_prev
-            header2 = df_head.iloc[idx + 1]
+            header2 = df_head.iloc[idx + 1].fillna("").astype(str)
             header = pd.concat([header1, header2, cols], axis=1).apply(
                 lambda x: ".".join(
                     [
