@@ -167,10 +167,11 @@ def clean_str_data(row: str):
 
 def clean_and_mask(df: pd.DataFrame) -> pd.DataFrame:
     df = df.fillna("").astype(str).applymap(clean_str_data)
-    return df.mask(df == "")
+    return df.mask(df == "").fillna("").astype(str)
 
 def create_header(df_head: pd.DataFrame, df_check: pd.DataFrame, cols_full: pd.Series, min_count: int) -> list:
     results = []
+    #df_head = df_head
     for idx in range(len(df_head.index) - 1):
         header1 = df_head.iloc[idx]
         if header1.notna().sum() >= min_count:
