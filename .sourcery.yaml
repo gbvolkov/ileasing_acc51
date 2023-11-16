@@ -64,7 +64,7 @@ rule_settings:
 #   min_duplicates: 2
 #   identical_clones_only: false
 
-# proxy:
-#   url:
-#   ssl_certs_file:
-#   no_ssl_verify: false
+proxy:
+  url: 
+  ssl_certs_file:
+  no_ssl_verify: true
