@@ -8,6 +8,7 @@ import PyPDF2
 import camelot  # type: ignore
 
 from const import DOCTYPES
+from itertools import chain, islice
 
 
 def pdf_pages_count(pdfname) -> int:
@@ -22,33 +23,32 @@ def pdf_get_y_value(elem):
 
 
 def get_head_lines_pdf(pdfname: str, nlines: int = 3):
-    result = []
-    for page_layout in extract_pages(pdfname, maxpages=1):
-        for element in sorted(list(filter(lambda elem: isinstance(elem, LTTextBoxHorizontal), page_layout)), key=pdf_get_y_value, reverse=True):  # type: ignore
-            if isinstance(element, LTTextBoxHorizontal):
-                txt = element.get_text()
-                lines = [x.strip() for x in txt.split("\n")]
-                for line in lines:
-                    if len(line) > 0:
-                        result.append(line)
-                        if len(result) >= nlines:
-                            return result
-    return result
+    text_boxes = chain.from_iterable(
+        sorted(
+            (elem for elem in page_layout if isinstance(elem, LTTextBoxHorizontal)),
+            key=pdf_get_y_value,
+            reverse=True
+        )
+        for page_layout in extract_pages(pdfname, maxpages=1)
+    )
+    lines = (line.strip() for box in text_boxes for line in box.get_text().split("\n") if line.strip())
+    return list(islice(lines, nlines))
+
+def print_status(message: str, inname: str, npages: int, spage: int = None, lpage: int = None): # type: ignore
+    current_time = datetime.now()
+    page_info = f":PROCESSED: {spage}-{lpage} of " if spage and lpage else ""
+    print(f"{current_time} : {inname} :{message}{page_info}{npages} pages", flush=True)
 
 
 def get_pdf_data(inname: str, maxpages=0) -> pd.DataFrame:
-    npages = pdf_pages_count(inname)
-    if maxpages > 0:
-        npages = min(npages, maxpages)
-    spage = 1
+    npages = min(pdf_pages_count(inname), maxpages or pdf_pages_count(inname))
     cchunk = 100
-
-    df = pd.DataFrame()
+    tables_list = []
 
     if npages >= 500:
-        print(datetime.now(), ":", inname, ":WARINING: huge pdf:", npages, " pages")
-        sys.stdout.flush()
-    while spage <= npages:
+        print_status("WARNING: huge pdf:", inname, npages)
+
+    for spage in range(1, npages + 1, cchunk):
         lpage = min(spage + cchunk - 1, npages)
         tables = camelot.read_pdf(
             inname,
@@ -58,18 +58,10 @@ def get_pdf_data(inname: str, maxpages=0) -> pd.DataFrame:
             backend="poppler",
             layout_kwargs={"char_margin": 0.1, "line_margin": 0.1, "boxes_flow": None},
         )
-        for tbl in tables:
-            df = pd.concat([df, tbl.df])
+        tables_list.extend(t.df for t in tables)
         if npages >= 500:
-            print(
-                datetime.now(),
-                ":",
-                inname,
-                f":PROCESSED: {spage}-{lpage} of ",
-                npages,
-                " pages",
-            )
-            sys.stdout.flush()
-        spage = lpage + 1
-    # df = pd.concat([headerData, df])
-    return df.reset_index(drop=True).dropna(axis=1, how="all")
+            print_status("", inname, npages, spage, lpage)
+
+    df = pd.concat(tables_list, ignore_index=True)
+    return df.dropna(axis=1, how="all")
+
