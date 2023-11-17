@@ -1,24 +1,20 @@
+import pandas as pd
 from const import DOCTYPES
 
 
+
 def get_head_lines_excel(data, nlines: int = 3):
-    idx = 0
     result = []
-    while idx < data.shape[0] and idx < nlines:
-        row = data.iloc[[idx][0]].dropna(how="all").tolist()
-        # result.append(row.dropna(how='all'))
-        result = result + row
-        idx += 1
+    for idx in range(min(nlines, data.shape[0])):
+        row = data.iloc[idx].dropna(how="all").tolist()
+        result.append(row)
     return [str(row) for row in result]
 
 
 def get_excel_sheet_kind(df) -> tuple[str, list[str]]:
-    kinds = []
     headers = get_head_lines_excel(df, 30)
-    if suitable := [
-        kind
-        for kind in DOCTYPES
-        if len([row for row in headers if kind in str(row).lower()]) > 0
-    ]:
-        kinds.append(suitable[0])
-    return (kinds[0] if kinds else "UNDEFINED", headers)
+    suitable_kind = next(
+        (kind for kind in DOCTYPES if any(kind in str(row).lower() for row in headers)),
+        "UNDEFINED"
+    )
+    return (suitable_kind, headers)
