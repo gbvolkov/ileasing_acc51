@@ -74,23 +74,11 @@ def cleanup_and_enreach_processed_data(
 
     return df
 
-
 # removes rows, containing 1, 2, 3, 4, 5, ... (assuming that is just rows with columns numbers, which should be ignored)
 def cleanup_raw_data(df: pd.DataFrame) -> pd.DataFrame:
-    ncols = len(df.columns)
-    row2del = "_".join([str(x) for x in range(1, ncols + 1)])
-
-    df["__rowval"] = (
-        pd.Series(
-            df.fillna("").astype(str).replace(r"\s+", "", regex=True).values.tolist()
-        )
-        .str.join("_")
-        .values
-    )
-    df = df[df.__rowval != row2del]
-
-    return df.drop("__rowval", axis=1)
-
+    row2del = "_".join([str(x) for x in range(1, len(df.columns) + 1)])
+    df = df[~df.fillna('').astype(str).replace(r"\s+", "", regex=True).agg('_'.join, axis=1).eq(row2del)]
+    return df
 
 def set_data_columns(df) -> pd.DataFrame:
     header1 = df.iloc[0]
@@ -149,12 +137,12 @@ def set_data_columns(df) -> pd.DataFrame:
 Сливаем каждую строку со следующей
 В результирующем датасете ищем первую строку с минимальным количеством нулов
 """
+# Precompile the combined regular expression
+clean_re = re.compile(r"\s+|\d+\.?\d*")
+
 def clean_str_data(row: str):
     row = row.replace("\n", "")
-    row = re.sub(r"\s+", "", row)
-    row = re.sub(r"\d+\.?\d*", "", row)
-    return row
-
+    return clean_re.sub("", row)
 
 def clean_and_mask(df: pd.DataFrame) -> pd.DataFrame:
     df = df.fillna("").astype(str).applymap(clean_str_data)
