@@ -153,70 +153,28 @@ def periodsGroups(ddf):
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", "--input", default="./data/DS1", help="Input folder")
-    parser.add_argument(
-        "-o", "--output", default="./data/res.csv", help="Resulting file"
-    )
-    parser.add_argument(
-        "-uids", "--uids", default="../FullData", help="Folders with Clients UIDS"
-    )
-    parser.add_argument(
-        "--transform",
-        default=False,
-        action=BooleanOptionalAction,
-        help="Weather to replace field separator (--no-transform opposite option)",
-    )
-    parser.add_argument(
-        "-c",
-        "--csvout",
-        default="./data/transformed.csv",
-        help="Transformed csv file name",
-    )
-    parser.add_argument(
-        "-d",
-        "--delimeter",
-        default=chr(188),
-        help="New transformed csv filed delimeter",
-    )
+    parser.add_argument("-o", "--output", default="./data/res.csv", help="Resulting file")
+    parser.add_argument("-uids", "--uids", default="../FullData", help="Folders with Clients UIDS")
+    parser.add_argument("--transform", default=False, action=BooleanOptionalAction, help="Weather to replace field separator (--no-transform opposite option)")
+    parser.add_argument("-d", "--delimiter", default=chr(188), help="New transformed csv field delimiter")
     args = vars(parser.parse_args())
 
-    inname = args["input"]
-    outname = args["output"]
-    uidsdir = args["uids"]
-    bTrans = args["transform"]
-    transcvname = args["csvout"]
-    csv_file_delimeter = args["delimeter"]  # chr(188)
+    input_folder = args["input"]
+    output_file = args["output"]
+    uids_folder = args["uids"]
+    csv_file_delimiter = args["delimiter"]
 
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
-    print(
-        "START:",
-        datetime.now(),
-        "\ninput:",
-        inname,
-        "\noutput:",
-        outname,
-        "\nuids:",
-        uidsdir,
-        "\ntransform:",
-        bTrans,
-        "\ntranscvname:",
-        transcvname,
-        "\ndelimeter:",
-        csv_file_delimeter,
-    )
-    # regexTest()
+    print(f"START: {datetime.now()}\ninput: {input_folder}\noutput: {output_file}\nuids: {uids_folder}\ndelimiter: {csv_file_delimiter}")
 
-    ddf = dd.read_csv(inname + "/*.csv", blocksize=None, dtype=str)  # type: ignore
+    dataframe = dd.read_csv(f"{input_folder}/*.csv", blocksize=None, dtype=str)  # type: ignore
 
-    dfRes = periodsGroups(ddf)
-    # dfRes = dalyEntriesbyClient(ddf, uidsdir)
+    result_dataframe = periodsGroups(dataframe)
 
-    dd.to_csv(dfRes, outname, single_file=True, encoding="utf-8")  # type: ignore
+    dd.to_csv(result_dataframe, output_file, single_file=True, encoding="utf-8")  # type: ignore
 
     print("Result produced")
-    # if bTrans:
-    #    print("Start transformation")
-    #    transform_csv(transcvname, inname, csv_file_delimeter)
-    # print("FINISHED")
 
+if __name__ == "__main__":
+    main()
 
-main()
