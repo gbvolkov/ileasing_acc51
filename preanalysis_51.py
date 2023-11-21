@@ -8,6 +8,7 @@ from argparse import (
 )
 import sys
 from const import DOCTYPES
+from collections import namedtuple
 
 from excelutils import get_excel_sheet_kind, get_head_lines_excel
 
@@ -25,79 +26,86 @@ def process_pdf(pdfname, clientid, logf):
         ]:
             kinds.append(suitable[0])
         print(pdfname, "::KIND:", kinds)
-
-        # for header in filter(lambda row: any([kind for kind in DOCTYPES if kind in row.lower()]), headers) :
-        #    print(pdfname, ":", header)
     except Exception as err:
         berror = True
         print(pdfname, "_", "ND", ":ERROR:", err)
         fileext = Path(pdfname).suffix
-        logstr = (
-            "ERROR|"
-            + clientid
-            + "|"
-            + os.path.basename(pdfname)
-            + "|ND|UNDEFINED|"
-            + fileext
-            + "|"
-            + type(err).__name__
-            + " "
-            + str(err)
-            + "\n"
-        )
+        logstr = f"ERROR|{clientid}|{os.path.basename(pdfname)}|ND|UNDEFINED|{fileext}|{type(err).__name__} {err}\n"
         logf.write(logstr)
     return (kinds[0], berror) if kinds else ("UNDEFINED", berror)
 
 
 def process_excel(xlsname, clientid, logf):
+    Result = namedtuple('Result', 'kind error')
     kind = "UNDEFINED"
     berror = False
     sheets = pd.read_excel(xlsname, header=None, sheet_name=None)
     if len(sheets) > 1:
-        print(xlsname, ":WARNING:", len(sheets), " sheets found")
-    # if len(sheets) > 1 :
+        print(f"{xlsname}:WARNING: {len(sheets)} sheets found")
     for sheet in sheets:
         try:
             kind, header = get_excel_sheet_kind(sheets[sheet])
-            print(xlsname, ":", sheet, ":KIND:", kind)
+            print(f"{xlsname}:{sheet}:KIND:{kind}")
             if kind != "UNDEFINED":
-                return (kind, False)
-            # break
+                return Result(kind, False)
         except Exception as err:
             berror = True
-            print(xlsname, "_", sheet, ":ERROR:", err)
+            print(f"{xlsname}_{sheet}:ERROR:{err}")
             fileext = Path(xlsname).suffix
-            logstr = (
-                "ERROR|"
-                + clientid
-                + "|"
-                + os.path.basename(xlsname)
-                + "|"
-                + sheet
-                + "|UNDEFINED|"
-                + fileext
-                + "|"
-                + type(err).__name__
-                + " "
-                + str(err)
-                + "\n"
-            )
+            logstr = f"ERROR|{clientid}|{os.path.basename(xlsname)}|{sheet}|UNDEFINED|{fileext}|{type(err).__name__} {err}\n"
             logf.write(logstr)
-    return (kind, berror)
+    return Result(kind, berror)
+
 
 
 def process(inname, clientid, logf):
-    kind = ""
-    berror = False
-    if inname.lower().endswith(".xls") or inname.lower().endswith(".xlsx"):
-        # sheets = pd.read_excel(inname, header=None, sheet_name=None)
-        kind, berror = process_excel(inname, clientid, logf)
-    elif inname.lower().endswith(".pdf"):
-        kind, berror = process_pdf(inname, clientid, logf)
-    return (kind, berror)
+    lower_inname = inname.lower()
+    if lower_inname.endswith((".xls", ".xlsx")):
+        return process_excel(inname, clientid, logf)
+    elif lower_inname.endswith(".pdf"):
+        return process_pdf(inname, clientid, logf)
+    return ("", False)
 
+
+from pathlib import Path
+import os
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 def main():
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-d", "--data", default="../Data", help="Data folder")
+    parser.add_argument("-l", "--logfile", default="./data/preanalys_test_2.txt", help="Log file")
+    args = vars(parser.parse_args())
+
+    DIRPATH = args["data"]
+    logname = args["logfile"]
+
+    with open(logname, "w", encoding="utf-8", buffering=1) as logf:
+        cnt = 0
+        FILEEXT = (".xls", ".xlsx", ".xlsm", ".pdf")
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)  # type: ignore
+
+        for root, dirs, files in sorted(os.walk(DIRPATH)):
+            for name in sorted(files):
+                if name.lower().endswith(FILEEXT):
+                    inname = os.path.join(root, name)
+                    clientid = os.path.basename(root)
+                    fileext = Path(name).suffix
+                    try:
+                        kind, berror = process(inname, clientid, logf)
+                        if kind:
+                            cnt += 1
+                            logstr = f"PROCESSED|{clientid}|{inname}|ALL|{kind}|{fileext}|OUT\n"
+                        else:
+                            logstr = f"FILE_ERROR|{clientid}|{inname}||UNDEFINED|{fileext}|TYPE CANNOT BE DEFINED\n"
+                        logf.write(logstr)
+                    except Exception as err:
+                        print(inname, ":ERROR:", err)
+                        logstr = f"FILE_ERROR|{clientid}|{inname}||UNDEFINED|{fileext}|{type(err).__name__} {err}\n"
+                        logf.write(logstr)
+
+
+def main_2():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-d", "--data", default="../Data", help="Data folder")
     parser.add_argument(
