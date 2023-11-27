@@ -37,12 +37,12 @@ def BankStatement_49_process(
 
 def set_footer_fields(footer, df):
     cbalance = footer[
-            footer.iloc[:, 0].fillna("").str.startswith("Исходящий остаток")
+            footer.iloc[:, 0].fillna("").astype(str).str.startswith("Исходящий остаток")
         ].dropna(axis=1, how="all")
     if cbalance.size > 2:
         df["closingBalance"] = cbalance.iloc[:, 2].values[0]
     turnovers = footer[
-            footer.iloc[:, 0].fillna("").str.startswith("Итого обороты:")
+            footer.iloc[:, 0].fillna("").astype(str).str.startswith("Итого обороты:")
         ].dropna(axis=1, how="all")
     if turnovers.size > 1:
         df["totalDebet"] = turnovers.iloc[:, 1].values[0]
