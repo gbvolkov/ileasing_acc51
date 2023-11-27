@@ -41,60 +41,57 @@ def process_data(
     sheet: str,
     logf: TextIOWrapper,
 ) -> pd.DataFrame:
-    # sourcery skip: extract-method
     outdata = pd.DataFrame()
     header, data, footer = get_table_range(df)
     if not data.empty:
         data = set_data_columns(data)
         data = cleanup_raw_data(data)
         signature = "|".join(data.columns).replace("\n", " ")
-        if len(header != 0):
+        if not header.empty:
             headerstr = "|".join(
                 header[:].apply(lambda x: "|".join(x.dropna().astype(str)), axis=1)
             )
         params = get_header_values(headerstr, signature)
 
-        funcs = list(
-            filter(
-                lambda item: item is not None,
-                [sig.get(signature) for sig in HDRSIGNATURES],
-            )
-        )
-        func = funcs[0] if funcs else NoneHDR_process
+        #funcs = [sig.get(signature) for sig in HDRSIGNATURES if sig.get(signature) is not None]
+        #func = funcs[0] if funcs else NoneHDR_process
+        func = next((sig.get(signature) for sig in HDRSIGNATURES if sig.get(signature)), NoneHDR_process)
         outdata = func(header, data, footer, inname, clientid, params, sheet, logf)  # type: ignore
         if not outdata.empty:
             outdata = cleanup_and_enreach_processed_data(outdata, inname, clientid, params, sheet, func.__name__)  # type: ignore
     return outdata
 
 
+
+def process_sheet(sheet_data: pd.DataFrame, inname: str, clientid: str, sheet_name: str, logf: TextIOWrapper) -> tuple[pd.DataFrame, bool]:
+    processed_data = pd.DataFrame()
+    try:
+        df = sheet_data.dropna(axis=1, how="all")
+        if df.empty:
+            return (processed_data, False)
+
+        kind, header = get_excel_sheet_kind(df)
+        if kind in get_active_types():
+            return (process_data(df, "|".join(header), inname, clientid, sheet_name, logf), False)
+        logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet_name}:0:{kind}\n"
+        logf.write(logstr)
+        return (processed_data, False)
+    except Exception as err:
+        print_exception(err, inname, clientid, sheet_name, logf)
+        return(processed_data, True)
+
+
 def process_excel(
     inname: str, clientid: str, logf: TextIOWrapper
 ) -> tuple[pd.DataFrame, int, bool]:
-    berror = False
-    df = pd.DataFrame()
-    result = pd.DataFrame()
-
-    sheets = pd.read_excel(inname, header=None, sheet_name=None)
-    if len(sheets) > 1:
-        print(f"{datetime.now()}:{inname}:WARNING:{len(sheets)} sheets found")
-    for sheet in sheets:
-        try:
-            df = sheets[sheet].dropna(axis=1, how="all")
-            if not df.empty:
-                kind, header = get_excel_sheet_kind(df)
-                if kind in get_active_types():
-                    outdata = process_data(
-                        df, "|".join(header), inname, clientid, str(sheet), logf
-                    )
-                    if not outdata.empty:
-                        result = pd.concat([result, outdata])
-                else:
-                    logstr = f"{datetime.now()}:PASSED:{clientid}:{os.path.basename(inname)}:{sheet}:0:{kind}\n"
-                    logf.write(logstr)
-        except Exception as err:
-            berror = True
-            print_exception(err, inname, clientid, str(sheet), logf)
-    return (result, len(sheets), berror)
+    with pd.ExcelFile(inname) as xls:
+        sheets_dict = pd.read_excel(xls, sheet_name=None, header=None)
+        
+        if len(sheets_dict) > 1:
+            print(f"{datetime.now()}:{inname}:WARNING:{len(sheets_dict)} sheets found")
+        datas, errors = zip(*[process_sheet(sheet, inname, clientid, str(sheet_name), logf) for sheet_name, sheet in sheets_dict.items()])
+    
+    return (pd.concat(datas), len(sheets_dict), any(errors))
 
 
 def process_pdf(
