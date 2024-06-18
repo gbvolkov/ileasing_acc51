@@ -1,0 +1,10 @@
+--trusted-host pypi.org
+--trusted-host files.pythonhosted.org
+pandas
+pdfminer.six
+dask
+xlrd==2.0.1
+opencv-python
+ghostscript
+camelot-py[base]
+PyPDF2==2.12.1

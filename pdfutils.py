@@ -13,9 +13,8 @@ from itertools import chain, islice
 
 def pdf_pages_count(pdfname) -> int:
     with open(pdfname, "rb") as f:
-        # pdfReader = PyPDF2.PdfFileReader(f)
-        pdfReader = PyPDF2.PdfReader(f)
-        return pdfReader.getNumPages()
+        pdf_reader = PyPDF2.PdfReader(f)
+        return pdf_reader.getNumPages()
 
 
 def pdf_get_y_value(elem):
