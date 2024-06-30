@@ -53,8 +53,6 @@ def process_data(
             )
         params = get_header_values(headerstr, signature)
 
-        #funcs = [sig.get(signature) for sig in HDRSIGNATURES if sig.get(signature) is not None]
-        #func = funcs[0] if funcs else NoneHDR_process
         func = next((sig.get(signature) for sig in HDRSIGNATURES if sig.get(signature)), NoneHDR_process)
         outdata = func(header, data, footer, inname, clientid, params, sheet, logf)  # type: ignore
         if not outdata.empty:
@@ -116,14 +114,14 @@ def process_pdf(
 def process(
     inname: str, clientid: str, logf: TextIOWrapper
 ) -> tuple[pd.DataFrame, int, bool]:
-    processFunc = process_other
+    process_func = process_other
 
     if inname.lower().endswith(".xls") or inname.lower().endswith(".xlsx"):
-        processFunc = process_excel
+        process_func = process_excel
     elif inname.lower().endswith(".pdf"):
-        processFunc = process_pdf
+        process_func = process_pdf
 
-    df, pages, berror = processFunc(inname, clientid, logf)
+    df, pages, berror = process_func(inname, clientid, logf)
     return (df, pages, berror)
 
 
@@ -133,9 +131,9 @@ def main():
         preanalysislog,
         logname,
         outbasename,
-        bSplit,
-        maxFiles,
-        doneFolder,
+        b_split,
+        max_files,
+        done_folder,
         FILEEXT,
         start,
         end,
@@ -147,9 +145,9 @@ def main():
         preanalysislog,
         logname,
         outbasename,
-        bSplit,
-        maxFiles,
-        doneFolder,
+        b_split,
+        max_files,
+        done_folder,
         FILEEXT,
         start,
         end,
@@ -187,13 +185,13 @@ def get_arguments():
     )
     parser.add_argument(
         "--pdf",
-        default=False,
+        default=True,
         action=BooleanOptionalAction,
         help="Weather to include pdf (--no-pdf opposite option)",
     )
     parser.add_argument(
         "--excel",
-        default=True,
+        default=False,
         action=BooleanOptionalAction,
         help="Weather to include excel files (--no-excel opposite option)",
     )
@@ -223,9 +221,9 @@ def get_parameters():
     preanalysislog = args["data"]
     logname = args["logfile"]
     outbasename = args["output"]
-    bSplit = args["split"]
-    maxFiles = args["maxinput"]
-    doneFolder = args["done"] + "/"
+    b_split = args["split"]
+    max_files = args["maxinput"]
+    done_folder = args["done"] + "/"
     FILEEXT = get_file_ext_list(args["excel"], args["pdf"])
     start = args["start"]
     end = args["end"]
@@ -234,9 +232,9 @@ def get_parameters():
         preanalysislog,
         logname,
         outbasename,
-        bSplit,
-        maxFiles,
-        doneFolder,
+        b_split,
+        max_files,
+        done_folder,
         FILEEXT,
         start,
         end,
@@ -247,3 +245,4 @@ def get_parameters():
 if __name__ == "__main__":
     DATATYPES = []
     main()
+
