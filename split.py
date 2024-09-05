@@ -14,9 +14,9 @@ import sys
 from os.path import exists as file_exists
 
 
-def formatDate(dtStr):
+def format_date(dt_str):
     try:
-        newstr = re.sub("[-/]", ".", dtStr)
+        newstr = re.sub("[-/]", ".", dt_str)
         return datetime.strptime(newstr, "%d.%m.%Y")
     except Exception:
         return datetime.now()
@@ -32,21 +32,21 @@ def split_csv(outname, inname):
 
         curclient = ""
         writer = None
-        bWriteHeader = False
+        b_write_header = False
         for row in reader:
-            row[dtidx] = datetime.strftime(formatDate(row[dtidx]), "%d.%m.%Y")
+            row[dtidx] = datetime.strftime(format_date(row[dtidx]), "%d.%m.%Y")
             clientid = row[clididx]
             if curclient != clientid:
                 curclient = clientid
                 if fout is not None:
                     fout.close()
                 outfilename = outname + "/" + curclient + ".csv"
-                bWriteHeader = not file_exists(outfilename)
+                b_write_header = not file_exists(outfilename)
                 fout = open(outfilename, "a+", encoding="utf-8", newline="")
                 writer = csv.writer(fout)
             if writer is not None:
-                if bWriteHeader:
-                    bWriteHeader = False
+                if b_write_header:
+                    b_write_header = False
                     writer.writerow(header)
                 writer.writerow(row)
 

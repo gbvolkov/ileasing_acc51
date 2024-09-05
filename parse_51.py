@@ -29,10 +29,12 @@ CHECK_STR = ["Обороты за период и сальдо на конец",
 SEARCH_STR = "Отбор:"
 HEADER_STR = "Период"
 DATE_REGEX = r"\d{1,2}[.\-/]\d{1,2}[.\-/]\d{4}"
+PERIOD_51_STR = "Карточка счета 51 "
+WARNING_CONTROL_CHECK=":WARNING. CONTROL CHECK FAILED:"
 
 
 # Получаем даты из строки с периодом выписки
-def getPeriod(periodstr) -> list[str]:
+def get_period(periodstr) -> list[str]:
     dates: list[str] = []
     locale.setlocale(locale.LC_ALL, "ru_RU")
     if periods := [x.strip() for x in re.findall(DATE_REGEX, periodstr)]:
@@ -48,11 +50,11 @@ def getPeriod(periodstr) -> list[str]:
     if len(dates) == 1:
         dates.append(dates[0])
     elif not dates:
-        if periodstr.startswith("Карточка счета 51 "):
+        if periodstr.startswith(PERIOD_51_STR):
             dates.extend(
                 (
-                    periodstr[len("Карточка счета 51 ") : -1],
-                    periodstr[len("Карточка счета 51 ") : -1],
+                    periodstr[len(PERIOD_51_STR) : -1],
+                    periodstr[len(PERIOD_51_STR) : -1],
                 )
             )
         else:
@@ -60,7 +62,7 @@ def getPeriod(periodstr) -> list[str]:
     return dates
 
 
-def getResult(data) -> pd.Series:
+def get_result(data) -> pd.Series:
     row = data.iloc[[-1][0]]
     row = row.astype(str).str.replace(" ", "")
     row = row.astype(str).str.replace(",", ".")
@@ -73,7 +75,7 @@ def getResult(data) -> pd.Series:
 # Потом соединяем первую и вторую строки (concatstr или что-то вроде)
 # После этого смотрим на дубликаты и оставляем только первое вхождение
 # И ещё костыль - оставляем последний столбец
-def getHeader(
+def get_header(
     dfhead,
 ) -> tuple[list[str], list[str]]:  # sourcery skip: raise-specific-error
     dfhead.iloc[:1] = dfhead.iloc[:1].fillna(method="ffill", axis=1)
@@ -93,10 +95,10 @@ def getHeader(
 
 
 # Из первых строк файла получаем имя компании, начало и конец периода, баланс на начало периода, магический столбец 'Д' и список значимых столбцов (для объединённых ячеек excel)
-def getDefinition(data) -> dict[str, Any]:  # sourcery skip: raise-specific-error
+def get_definition(data) -> dict[str, Any]:  # sourcery skip: raise-specific-error
     state = STATE.stINIT.value
     idx = 0
-    companyName = "ND"
+    company_name = "ND"
     periods = ["ND"] * 2
     columns: list[str] = []
     cols2del: list[str] = []
@@ -106,11 +108,11 @@ def getDefinition(data) -> dict[str, Any]:  # sourcery skip: raise-specific-erro
         if isinstance(row[0], str) and len(row[0]) > 0:
             match state:
                 case STATE.stINIT.value:
-                    companyName = row[0]
+                    company_name = row[0]
                     state = state + 1
                 case STATE.stPERIOD.value:
                     if PERIOD_STR in row[0]:
-                        periods = getPeriod(row[0])
+                        periods = get_period(row[0])
                         state = state + 1
                 case STATE.stHEADER.value:
                     if HEADER_STR in row[0] or "Дата" in row[0]:
@@ -119,13 +121,13 @@ def getDefinition(data) -> dict[str, Any]:  # sourcery skip: raise-specific-erro
                         # После этого смотрим на дубликаты и оставляем только первое вхождение
                         # И ещё костыль - оставляем последний столбец
                         dfhead = data.iloc[idx : idx + 2]
-                        (columns, cols2del) = getHeader(dfhead)
+                        (columns, cols2del) = get_header(dfhead)
                         state = state + 1
         idx += 1
     if state <= STATE.stHEADER.value:
         raise Exception("Incorrect header structure")
     return {
-        "Company_Name": companyName,
+        "Company_Name": company_name,
         "Start": periods[0],
         "Finish": periods[1],
         "columns": columns,
@@ -134,7 +136,7 @@ def getDefinition(data) -> dict[str, Any]:  # sourcery skip: raise-specific-erro
 
 
 # Совершенно костыльная процедура
-def addMissedColumns(data, columns, cols2del) -> pd.DataFrame:
+def add_missed_columns(data, columns, cols2del) -> pd.DataFrame:
     # sourcery skip: raise-specific-error
     maxidx = data.columns[-1]
     df = data.reindex(
@@ -158,8 +160,6 @@ def addMissedColumns(data, columns, cols2del) -> pd.DataFrame:
                 df.insert(8, columns[1][0] + 1, "Д")
                 df.insert(9, columns[1][0], 0.0)
         except Exception:
-            # df.insert(df.shape[1], columns[2][0]-1, 'Д')
-            # df.insert(df.shape[1], columns[2][0], 0.0)
             df.insert(8, columns[2][0] - 1, "Д")
             df.insert(9, columns[2][0], 0.0)
     except Exception as e:
@@ -169,7 +169,7 @@ def addMissedColumns(data, columns, cols2del) -> pd.DataFrame:
 
 
 # Returns (trancated df, openbalance, controlDebet, controlCredit, controlBalance)
-def getControlValues(df) -> tuple[pd.DataFrame, float, float, float, float]:
+def get_control_values(df) -> tuple[pd.DataFrame, float, float, float, float]:
     # Берём контрольные данные из строки "Обороты за период и сальдо на конец"
     firstrow = df.loc[df.iloc[:, 0].str.contains(BALANCE_STR, na=False)]
     lastrow = df.loc[
@@ -179,43 +179,43 @@ def getControlValues(df) -> tuple[pd.DataFrame, float, float, float, float]:
 
     openbalance = 0.0
     try:
-        openvalues = getResult(firstrow)
+        openvalues = get_result(firstrow)
         if not openvalues.empty:
             openbalance = openvalues.iloc[0].round(2)
     except Exception:
         openbalance = 0.0
 
-    controlDebet = 0.0
-    controlCredit = 0.0
-    controlBalance = 0.0
+    control_debet = 0.0
+    control_credit = 0.0
+    control_balance = 0.0
     try:
-        checkvalues = getResult(lastrow)
+        checkvalues = get_result(lastrow)
         if not checkvalues.empty:
             try:
-                controlDebet = checkvalues.iloc[0].round(2)
+                control_debet = checkvalues.iloc[0].round(2)
             except Exception:
-                controlDebet = 0
+                control_debet = 0
             try:
-                controlCredit = checkvalues.iloc[1].round(2)
+                control_credit = checkvalues.iloc[1].round(2)
             except Exception:
-                controlCredit = 0
+                control_credit = 0
             try:
-                controlBalance = checkvalues.iloc[2].round(2)
+                control_balance = checkvalues.iloc[2].round(2)
             except Exception:
-                controlBalance = 0
+                control_balance = 0
     except Exception:
-        controlDebet = 0.0
-        controlCredit = 0.0
-        controlBalance = 0.0
+        control_debet = 0.0
+        control_credit = 0.0
+        control_balance = 0.0
 
     lowidx = 1 if firstrow.empty else firstrow.index[0] + 1
     highidx = df.shape[0] + 1 if lastrow.empty else lastrow.index[0]
     return (
         df.iloc[lowidx:highidx, :],
         openbalance,
-        controlDebet,
-        controlCredit,
-        controlBalance,
+        control_debet,
+        control_credit,
+        control_balance,
     )
 
 
@@ -233,16 +233,16 @@ COLUMNS = [
 ]
 
 
-def publishgDataFrame(
+def publishg_data_frame(
     df,
     xlsname,
     clientid,
     searchstr,
     definition,
-    initialBalance,
-    controlDebet,
-    controlCredit,
-    controlBalance,
+    initial_balance,
+    control_debet,
+    control_credit,
+    control_balance,
 ) -> pd.DataFrame:
     if not df.empty:
         df = df.iloc[:, 0:10]
@@ -266,7 +266,7 @@ def publishgDataFrame(
     df["Start"] = definition["Start"]
     df["Finish"] = definition["Finish"]
     df["OpenD"] = "Д"  # definition['OpenD']
-    df["OpenBalance"] = initialBalance  # definition['OpenBalance'].round(2)
+    df["OpenBalance"] = initial_balance  # definition['OpenBalance'].round(2)
     df["file"] = xlsname
     df["processdate"] = datetime.now()
 
@@ -278,78 +278,78 @@ def publishgDataFrame(
     df = df[df.Date.astype(str).str.match(DATE_REGEX).fillna(False)]
 
     # Проверяем коррекность данных: сверка оборотов и остатков по счёту
-    closeBalance = 0.0
-    openBalance = 0.0
-    totalDebet = 0.0
-    totalCredit = 0.0
-    balanceCheck = 0.0
+    close_balance = 0.0
+    open_balance = 0.0
+    total_debet = 0.0
+    total_credit = 0.0
+    balance_check = 0.0
 
     try:
         df["Debet_Amount"] = pd.to_numeric(df["Debet_Amount"], errors="coerce")
         df["Credit_Amount"] = pd.to_numeric(df["Credit_Amount"], errors="coerce")
         df["Balance"] = pd.to_numeric(df["Balance"], errors="coerce")
-        totalDebet = df["Debet_Amount"].sum().round(2)
-        totalCredit = df["Credit_Amount"].sum().round(2)
+        total_debet = df["Debet_Amount"].sum().round(2)
+        total_credit = df["Credit_Amount"].sum().round(2)
 
         if not df.empty:
-            openBalance = df.iloc[[0][0]]["OpenBalance"].round(2)
-            closeBalance = df.iloc[[-1][0]]["Balance"].round(2)
-        balanceCheck = round(openBalance + totalDebet - totalCredit, 2)
+            open_balance = df.iloc[[0][0]]["OpenBalance"].round(2)
+            close_balance = df.iloc[[-1][0]]["Balance"].round(2)
+        balance_check = round(open_balance + total_debet - total_credit, 2)
     except Exception:
         print(
             datetime.now(), ":", xlsname, ":ERROR.:", "Checksum cannot be calculated!"
         )
 
     status = 0
-    if totalDebet != controlDebet:
+    if total_debet != control_debet:
         print(
             datetime.now(),
             ":",
             xlsname,
-            ":WARNING. CONTROL CHECK FAILED:",
+            WARNING_CONTROL_CHECK,
             "DEBIT:",
-            totalDebet,
+            total_debet,
             "!=",
-            controlDebet,
+            control_debet,
         )
         status += 1
-    if totalCredit != controlCredit:
+    if total_credit != control_credit:
         print(
             datetime.now(),
             ":",
             xlsname,
-            ":WARNING. CONTROL CHECK FAILED:",
+            WARNING_CONTROL_CHECK,
             "CREDIT:",
-            totalCredit,
+            total_credit,
             "!=",
-            controlCredit,
+            control_credit,
         )
         status += 2
-    if closeBalance != controlBalance:
+    if close_balance != control_balance:
         print(
             datetime.now(),
             ":",
             xlsname,
-            ":WARNING. CONTROL CHECK FAILED:",
+            WARNING_CONTROL_CHECK,
             "CLOSE BALANCE:",
-            closeBalance,
+            close_balance,
             "!=",
-            controlBalance,
+            control_balance,
         )
         status += 4
-    if balanceCheck != controlBalance:
+    if balance_check != control_balance:
         print(
             datetime.now(),
             ":",
             xlsname,
-            ":WARNING. CONTROL CHECK FAILED:",
+            WARNING_CONTROL_CHECK,
             "BALANCE CHECK",
-            balanceCheck,
+            balance_check,
             "!=",
-            controlBalance,
+            control_balance,
         )
         status += 8
-    if totalDebet == 0.0 and totalCredit == 0.0:
+    if total_debet == 0.0 and total_credit == 0.0:
         print(datetime.now(), ":", xlsname, ":WARNING. Zero turnovers")
         status += 16
 
@@ -364,7 +364,7 @@ def getDataFrameFromExcel(df, clientid, xlsname) -> pd.DataFrame:
     # Из первых строк файла получаем имя компании, начало и конец периода, баланс на начало периода,
     #   магический столбец 'Д' и список значимых столбцов (для объединённых ячеек excel)
     # try:
-    definition = getDefinition(df)
+    definition = get_definition(df)
 
     # Пытаемся найти отбор по счёту
     searchrow = df.loc[df[0] == SEARCH_STR]
@@ -375,13 +375,13 @@ def getDataFrameFromExcel(df, clientid, xlsname) -> pd.DataFrame:
     except Exception as err:
         searchstr = ""
 
-    df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(df)
+    df, openbalance, controlDebet, controlCredit, controlBalance = get_control_values(df)
 
     if not df.empty:
         df = df.dropna(axis=1, how="all")
-        df = addMissedColumns(df, definition["columns"], definition["cols2del"])
+        df = add_missed_columns(df, definition["columns"], definition["cols2del"])
 
-    df = publishgDataFrame(
+    df = publishg_data_frame(
         df,
         xlsname,
         clientid,
@@ -426,7 +426,7 @@ def processPDF(
 
     if len(headers) >= 2 and headers[1].startswith("Карточка счета 51"):
         companyName = headers[0]
-        periods = getPeriod(headers[1])
+        periods = get_period(headers[1])
 
         definition = {
             "Company_Name": companyName,
@@ -481,10 +481,10 @@ def processPDF(
             df[8] = ""
         df = df.drop(axis=1, columns=["Contains_D"])
 
-        df, openbalance, controlDebet, controlCredit, controlBalance = getControlValues(
+        df, openbalance, controlDebet, controlCredit, controlBalance = get_control_values(
             df
         )
-        df = publishgDataFrame(
+        df = publishg_data_frame(
             df,
             inname,
             clientid,

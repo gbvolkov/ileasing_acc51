@@ -44,7 +44,7 @@ def process_excel(xlsname, clientid, logf):
         print(f"{xlsname}:WARNING: {len(sheets)} sheets found")
     for sheet in sheets:
         try:
-            kind, header = get_excel_sheet_kind(sheets[sheet])
+            kind, _ = get_excel_sheet_kind(sheets[sheet])
             print(f"{xlsname}:{sheet}:KIND:{kind}")
             if kind != "UNDEFINED":
                 return Result(kind, False)
@@ -81,7 +81,6 @@ def main():
     logname = args["logfile"]
 
     with open(logname, "w", encoding="utf-8", buffering=1) as logf:
-        cnt = 0
         FILEEXT = (".xls", ".xlsx", ".xlsm", ".pdf")
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)  # type: ignore
 
@@ -92,9 +91,8 @@ def main():
                     clientid = os.path.basename(root)
                     fileext = Path(name).suffix
                     try:
-                        kind, berror = process(inname, clientid, logf)
+                        kind, _ = process(inname, clientid, logf)
                         if kind:
-                            cnt += 1
                             logstr = f"PROCESSED|{clientid}|{inname}|ALL|{kind}|{fileext}|OUT\n"
                         else:
                             logstr = f"FILE_ERROR|{clientid}|{inname}||UNDEFINED|{fileext}|TYPE CANNOT BE DEFINED\n"

@@ -16,8 +16,8 @@ def print_exception(
     logf.write(logstr)
 
 
-def move_to_folder(fname: str, doneFolder: str):
-    outdir = f"{doneFolder}/{os.path.split(os.path.dirname(fname))[1]}"
+def move_to_folder(fname: str, done_folder: str):
+    outdir = f"{done_folder}/{os.path.split(os.path.dirname(fname))[1]}"
     outname = f"{outdir}/{os.path.basename(fname)}"
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
