@@ -158,7 +158,7 @@ def main():
 def get_arguments():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "-d", "--data", default="./data/test_preanalysis.csv", help="Data folder"
+        "-d", "--data", default="./data/preanalysis51_full_202409.csv", help="Data folder"
     )
     parser.add_argument("-r", "--done", default="./data/Done", help="Done folder")
     parser.add_argument(

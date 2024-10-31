@@ -266,6 +266,7 @@ def getFilesList(log: str, start: int, end: int, doctype: list[str] = None) -> l
             "sheets",
             "doctype",
             "filetype",
+            "date",
             "error",
         ],
         delimiter="|",
