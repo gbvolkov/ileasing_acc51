@@ -12,3 +12,4 @@ prelogs/*
 out/*
 data/parsed.csv
 arch/*
+data/
